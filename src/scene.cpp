@@ -1,5 +1,7 @@
 #include "scene.hpp"
 
+#include "objects/planet.hpp"
+
 using namespace cgp;
 
 void scene_structure::initialize()
@@ -25,12 +27,16 @@ void scene_structure::initialize()
                                                   { -1, 3, 3 }, { -1, 3, e }));
     wall.initialize_data_on_gpu(mesh_wall);
 
+    /*
     // Add a default deformable model
-    add_new_deformable_shape({ 0, 0, 1 }, /* initial position */
-                             { 0, 0, 0 }, /* initial velocity */
-                             { 0, 0, 0 }, /* initial angular velocity */
-                             { 1, 1, 1 } /* initial color */
-    );
+    add_new_deformable_shape({ 0, 0, 1 }, // initial position
+                             { 0, 0, 0 }, // initial velocity
+                             { 0, 0, 0 }, // initial angular velocity
+                             { 1, 1, 1 } // initial color
+    );*/
+
+    Planet planet(0.7, { 0.0, 0.0, 1.0 });
+    deformables.push_back(planet.get_shape());
 }
 
 void scene_structure::display_frame()
