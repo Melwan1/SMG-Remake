@@ -10,7 +10,7 @@ void scene_structure::initialize()
                               window); // Give access to the inputs and window
                                        // global state to the camera controler
     camera_control.set_rotation_axis_z();
-    camera_control.look_at({ 3.0f, 2.0f, 2.0f }, { 0, 0, 0 }, { 0, 0, 1 });
+    camera_control.look_at({ 3.0f, 2.0f, 2.0f }, { 0, 0, 1.5 }, { 0, 0, 0 });
     global_frame.initialize_data_on_gpu(mesh_primitive_frame());
 
     // A sphere used to display the collision model
@@ -18,6 +18,10 @@ void scene_structure::initialize()
         mesh_primitive_sphere(1.0f, { 0, 0, 0 }, 10, 5));
 
     planets.emplace_back(0.7, 3.5, cgp::vec3({ 0.0, 0.0, 1.0 }));
+    shape_deformable_structure player;
+    player.initialize(mesh_primitive_ellipsoid(cgp::vec3(0.07, 0.07, 0.2), cgp::vec3(0.0, 0.0, 0.0)));
+    player.set_position_and_velocity(cgp::vec3(0.0, 0.0, 1.9), cgp::vec3(0.0, 0.0, 0.0), cgp::vec3(0.0, 0.0, 0.0));
+    deformables.push_back(player);
 }
 
 void scene_structure::display_frame()
