@@ -17,26 +17,7 @@ void scene_structure::initialize()
     sphere.initialize_data_on_gpu(
         mesh_primitive_sphere(1.0f, { 0, 0, 0 }, 10, 5));
 
-    // Display the colliding walls (and the floor)
-    float e = -0.001f;
-    mesh mesh_wall = mesh_primitive_quadrangle({ -1, -1, e }, { 3, -1, e },
-                                               { 3, 3, e }, { -1, 3, e });
-    mesh_wall.push_back(mesh_primitive_quadrangle({ -1, -1, e }, { -1, -1, 3 },
-                                                  { 3, -1, 3 }, { 3, -1, e }));
-    mesh_wall.push_back(mesh_primitive_quadrangle({ -1, -1, e }, { -1, -1, 3 },
-                                                  { -1, 3, 3 }, { -1, 3, e }));
-    wall.initialize_data_on_gpu(mesh_wall);
-
-    /*
-    // Add a default deformable model
-    add_new_deformable_shape({ 0, 0, 1 }, // initial position
-                             { 0, 0, 0 }, // initial velocity
-                             { 0, 0, 0 }, // initial angular velocity
-                             { 1, 1, 1 } // initial color
-    );*/
-
-    Planet planet(0.7, { 0.0, 0.0, 1.0 });
-    deformables.push_back(planet.get_shape());
+    planets.emplace_back(0.7, 3.5, cgp::vec3({ 0.0, 0.0, 1.0 }));
 }
 
 void scene_structure::display_frame()
@@ -52,7 +33,7 @@ void scene_structure::display_frame()
     // Compute the simulation
     if (param.time_step > 1e-6f)
     {
-        simulation_step(deformables, param);
+        simulation_step(deformables, planets, param);
     }
 
     // Display all the deformable shapes
@@ -63,6 +44,19 @@ void scene_structure::display_frame()
         if (gui.display_wireframe)
         {
             draw_wireframe(deformables[k].drawable);
+        }
+    }
+
+    // display the planets
+
+    for (int planet_index = 0; planet_index < planets.size(); planet_index++)
+    {
+        shape_deformable_structure& shape = planets[planet_index].get_shape();
+        shape.update_drawable();
+        draw(shape.drawable);
+        if (gui.display_wireframe)
+        {
+            draw_wireframe(shape.drawable);
         }
     }
 

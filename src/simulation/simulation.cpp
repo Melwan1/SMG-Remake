@@ -3,6 +3,7 @@
 #include "../../third_party/eigen/Eigen/Core"
 #include "../../third_party/eigen/Eigen/SVD"
 #include "deformable/deformable.hpp"
+#include "objects/planet.hpp"
 
 using namespace cgp;
 
@@ -27,6 +28,7 @@ void shape_matching(std::vector<shape_deformable_structure> &deformables,
 // Perform one simulation step (one numerical integration along the time step
 // dt) using PPD + Shape Matching
 void simulation_step(std::vector<shape_deformable_structure> &deformables,
+                    std::vector<Planet>& planets,
                      simulation_parameter const &param)
 {
     float dt = param.time_step;
