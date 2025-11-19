@@ -15,8 +15,11 @@ void scene_structure::initialize()
 
     planets.emplace_back(0.7f, 10.5f, cgp::vec3(0.0f, 0.0f, 1.0f));
     shape_deformable_structure player;
-    player.initialize(mesh_primitive_ellipsoid(cgp::vec3(0.07, 0.07, 0.2), cgp::vec3(0.0, 0.0, 0.0)));
-    player.set_position_and_velocity(cgp::vec3(0.0, 0.0, 1.9), cgp::vec3(0.0, 0.0, 0.0), cgp::vec3(0.0, 0.0, 0.0));
+    player.initialize(mesh_primitive_ellipsoid(cgp::vec3(0.07, 0.07, 0.2),
+                                               cgp::vec3(0.0, 0.0, 0.0)));
+    player.set_position_and_velocity(cgp::vec3(0.0, 0.0, 1.9),
+                                     cgp::vec3(0.0, 0.0, 0.0),
+                                     cgp::vec3(0.0, 0.0, 0.0));
     deformables.push_back(player);
 }
 
@@ -51,7 +54,7 @@ void scene_structure::display_frame()
 
     for (int planet_index = 0; planet_index < planets.size(); planet_index++)
     {
-        shape_deformable_structure& shape = planets[planet_index].get_shape();
+        shape_deformable_structure &shape = planets[planet_index].get_shape();
         shape.update_drawable();
         draw(shape.drawable);
         if (gui.display_wireframe)

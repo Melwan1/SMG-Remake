@@ -20,5 +20,5 @@ struct simulation_parameter
 };
 
 void simulation_step(std::vector<shape_deformable_structure> &deformables,
-                     std::vector<Planet>& planets,
+                     std::vector<Planet> &planets,
                      simulation_parameter const &param);

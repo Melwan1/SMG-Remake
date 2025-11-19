@@ -1,7 +1,7 @@
 #pragma once
 
-#include "objects/planet.hpp"
 #include "environment.hpp"
+#include "objects/planet.hpp"
 #include "simulation/simulation.hpp"
 
 using cgp::mesh_drawable;
