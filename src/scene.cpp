@@ -1,9 +1,5 @@
 #include "scene.hpp"
 
-#include "objects/planet.hpp"
-
-using namespace cgp;
-
 void scene_structure::initialize()
 {
     camera_control.initialize(inputs,
@@ -17,7 +13,7 @@ void scene_structure::initialize()
     sphere.initialize_data_on_gpu(
         mesh_primitive_sphere(1.0f, { 0, 0, 0 }, 10, 5));
 
-    planets.emplace_back(0.7, 10.5, cgp::vec3({ 0.0, 0.0, 1.0 }));
+    planets.emplace_back(0.7f, 10.5f, cgp::vec3(0.0f, 0.0f, 1.0f));
     shape_deformable_structure player;
     player.initialize(mesh_primitive_ellipsoid(cgp::vec3(0.07, 0.07, 0.2), cgp::vec3(0.0, 0.0, 0.0)));
     player.set_position_and_velocity(cgp::vec3(0.0, 0.0, 1.9), cgp::vec3(0.0, 0.0, 0.0), cgp::vec3(0.0, 0.0, 0.0));

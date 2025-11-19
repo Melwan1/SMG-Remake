@@ -1,7 +1,5 @@
 #pragma once
 
-#include "cgp/cgp.hpp"
-#include "deformable/deformable.hpp"
 #include "objects/planet.hpp"
 #include "environment.hpp"
 #include "simulation/simulation.hpp"
