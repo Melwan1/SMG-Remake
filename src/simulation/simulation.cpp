@@ -13,8 +13,17 @@ using namespace cgp;
 //   matrix
 mat3 polar_decomposition(mat3 const &M);
 
+void planet_attraction(std::vector<shape_deformable_structure> &deformables,
+                       const std::vector<Planet> &planets,
+                       simulation_parameter const &param);
+
 // Compute the collision between the particles and the walls
 void collision_with_walls(std::vector<shape_deformable_structure> &deformables);
+
+// Compute the collision between the particles and the planets
+void collision_with_planets(
+    std::vector<shape_deformable_structure> &deformables,
+    const std::vector<Planet> &planets, simulation_parameter const &param);
 
 // Compute the collision between the particles to each other
 void collision_between_particles(
@@ -28,32 +37,41 @@ void shape_matching(std::vector<shape_deformable_structure> &deformables,
 // Perform one simulation step (one numerical integration along the time step
 // dt) using PPD + Shape Matching
 void simulation_step(std::vector<shape_deformable_structure> &deformables,
-                    std::vector<Planet>& planets,
+                     std::vector<Planet> &planets,
                      simulation_parameter const &param)
 {
     float dt = param.time_step;
     int N_deformable = deformables.size();
 
+    // Calculate the center of mass first for later use
+    for (shape_deformable_structure &deformable : deformables)
+    {
+        deformable.com = average(deformable.position);
+    }
+
     // I. - Apply the external forces to the velocity
     //    - Compute the predicted position from this time integration
-    vec3 const gravity = vec3(0.0f, 0.0f, -9.81f);
-    for (int kd = 0; kd < N_deformable; ++kd)
-    { // For all the deformable shapes
-        shape_deformable_structure &deformable = deformables[kd];
-        int N_vertex = deformable.position.size();
-        for (int k = 0; k < N_vertex;
-             ++k) // For all the vertices of each deformable shape
-        {
-            // Standard integration of external forces
-            //   drag + gravity
-            deformable.velocity[k] =
-                deformable.velocity[k] * (1 - dt * param.friction)
-                + dt * gravity;
-            //   predicted position
-            deformable.position_predict[k] =
-                deformable.position[k] + dt * deformable.velocity[k];
-        }
-    }
+    // vec3 const gravity = vec3(0.0f, 0.0f, -9.81f);
+    // for (int kd = 0; kd < N_deformable; ++kd)
+    // { // For all the deformable shapes
+    //     shape_deformable_structure &deformable = deformables[kd];
+    //     int N_vertex = deformable.position.size();
+    //     for (int k = 0; k < N_vertex;
+    //          ++k) // For all the vertices of each deformable shape
+    //     {
+    //         // Standard integration of external forces
+    //         //   drag + gravity
+    //         deformable.velocity[k] =
+    //             deformable.velocity[k] * (1 - dt * param.friction)
+    //             + dt * gravity;
+    //         //   predicted position
+    //         deformable.position_predict[k] =
+    //             deformable.position[k] + dt * deformable.velocity[k];
+    //     }
+    // }
+
+    // I. bis -> planet attraction instead of gravity
+    planet_attraction(deformables, planets, param);
 
     // II. Constraints using PPD
     //     - Collision with the walls (particles/walls)
@@ -63,8 +81,9 @@ void simulation_step(std::vector<shape_deformable_structure> &deformables,
     for (int k_collision_steps = 0; k_collision_steps < param.collision_steps;
          ++k_collision_steps)
     {
-        collision_with_walls(deformables);
+        // collision_with_walls(deformables);
         collision_between_particles(deformables, param);
+        collision_with_planets(deformables, planets, param);
         shape_matching(deformables, param);
     }
 
@@ -210,6 +229,60 @@ void collision_between_particles(
     }
 }
 
+void collision_with_planets(
+    std::vector<shape_deformable_structure> &deformables,
+    const std::vector<Planet> &planets, simulation_parameter const &param)
+{
+    const float r = param.collision_radius; // radius of colliding sphere
+
+    // Prepare acceleration structure using axis-aligned bounding boxes.
+    std::vector<bounding_box> bbox;
+    const int N_deformable = deformables.size();
+    for (int kd = 0; kd < N_deformable; ++kd)
+    {
+        bounding_box b;
+        b.initialize(deformables[kd].position_predict);
+        b.extends(r);
+        bbox.push_back(b);
+    }
+
+    std::vector<bounding_box> planet_bbox;
+    const int N_planet = planets.size();
+    for (int kp = 0; kp < N_planet; ++kp)
+    {
+        bounding_box b;
+        b.initialize(planets[kp].get_mesh().position);
+        b.extends(2 * planets[kp].get_radius());
+        planet_bbox.push_back(b);
+    }
+
+    for (int i = 0; i < N_deformable; i++)
+    {
+        for (int j = 0; j < N_planet; j++)
+        {
+            auto &deformable = deformables[i];
+            auto &planet = planets[j];
+            const auto planet_r = planet.get_radius();
+            const auto planet_center = planet.get_center();
+
+            if (bounding_box::collide(bbox[i], planet_bbox[j]))
+            {
+                // objects MAY collide
+                for (auto &deformable_position : deformable.position_predict)
+                {
+                    vec3 to_planet = planet_center - deformable_position;
+                    auto n = norm(to_planet);
+                    if (n < r + planet_r)
+                    {
+                        deformable_position -=
+                            normalize(to_planet) * ((r + planet_r) - n);
+                    }
+                }
+            }
+        }
+    }
+}
+
 // Compute the collision between the particles and the walls
 // Note: This function is already pre-coded
 void collision_with_walls(std::vector<shape_deformable_structure> &deformables)
@@ -242,6 +315,56 @@ void collision_with_walls(std::vector<shape_deformable_structure> &deformables)
                 p.x = deformable.position[k].x;
                 p.y = deformable.position[k].y;
             }
+        }
+    }
+}
+
+// Compute the attraction of the planet
+void planet_attraction(std::vector<shape_deformable_structure> &deformables,
+                       const std::vector<Planet> &planets,
+                       simulation_parameter const &param)
+{
+    constexpr float G = 6.67 * 1e-11;
+    // const vec3 gravity = vec3(0.0f, 0.0f, -9.81f);
+
+    const int N_deformable = deformables.size();
+    const float dt = param.time_step;
+
+    for (int kd = 0; kd < N_deformable; ++kd)
+    {
+        // For all the deformable shapes
+        shape_deformable_structure &deformable = deformables[kd];
+        const int N_vertex = deformable.position.size();
+
+        auto planet_gravity = vec3(0.0, 0.0, 0.0);
+        for (const auto &planet : planets)
+        {
+            vec3 planet_vector = planet.get_center() - deformable.com;
+            const float n = norm(planet_vector);
+            const auto attraction_radius = planet.get_attraction_radius();
+
+            std::cout << n << ", " << attraction_radius << std::endl;
+            if (n <= attraction_radius)
+            {
+                constexpr float random_mass_factor = 25;
+                // In reality, it's : G * m1 * m2 / (n * n)
+                planet_gravity +=
+                    random_mass_factor * normalize(planet_vector) / (n * n);
+            }
+        }
+
+        for (int k = 0; k < N_vertex; ++k)
+        {
+            // For all the vertices of each deformable shape
+
+            // Standard integration of external forces
+            //   drag + gravity
+            deformable.velocity[k] =
+                deformable.velocity[k] * (1 - dt * param.friction)
+                + dt * planet_gravity;
+            //   predicted position
+            deformable.position_predict[k] =
+                deformable.position[k] + dt * deformable.velocity[k];
         }
     }
 }

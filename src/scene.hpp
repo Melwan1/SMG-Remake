@@ -50,7 +50,7 @@ struct scene_structure : scene_inputs_generic
 
     simulation_parameter param;
     std::vector<shape_deformable_structure> deformables;
-    std::vector<Planet> planets;
+    std::vector<Planet> planets = std::vector<Planet>();
     void add_new_deformable_shape(vec3 const &center, vec3 const &velocity,
                                   vec3 const &angular_velocity,
                                   vec3 const &color);
