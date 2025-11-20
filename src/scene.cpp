@@ -1,36 +1,62 @@
 #include "scene.hpp"
 
-using namespace cgp;
-
 void scene_structure::initialize()
 {
-    camera_control.initialize(inputs,
-                              window); // Give access to the inputs and window
-                                       // global state to the camera controler
-    camera_control.set_rotation_axis_z();
-    camera_control.look_at({ 3.0f, 2.0f, 2.0f }, { 0, 0, 0 }, { 0, 0, 1 });
+    YAML::Node scene_config = YAML::LoadFile("config/scenes/scene_01.yaml");
+    YAML::Node planet_config = scene_config["planets"];
+    initialize_camera(scene_config["camera"]);
     global_frame.initialize_data_on_gpu(mesh_primitive_frame());
 
     // A sphere used to display the collision model
     sphere.initialize_data_on_gpu(
         mesh_primitive_sphere(1.0f, { 0, 0, 0 }, 10, 5));
 
-    // Display the colliding walls (and the floor)
-    float e = -0.001f;
-    mesh mesh_wall = mesh_primitive_quadrangle({ -1, -1, e }, { 3, -1, e },
-                                               { 3, 3, e }, { -1, 3, e });
-    mesh_wall.push_back(mesh_primitive_quadrangle({ -1, -1, e }, { -1, -1, 3 },
-                                                  { 3, -1, 3 }, { 3, -1, e }));
-    mesh_wall.push_back(mesh_primitive_quadrangle({ -1, -1, e }, { -1, -1, 3 },
-                                                  { -1, 3, 3 }, { -1, 3, e }));
-    wall.initialize_data_on_gpu(mesh_wall);
+    initialize_player(scene_config["player"]);
+    initialize_planets(planet_config);
 
-    // Add a default deformable model
-    add_new_deformable_shape({ 0, 0, 1 }, /* initial position */
-                             { 0, 0, 0 }, /* initial velocity */
-                             { 0, 0, 0 }, /* initial angular velocity */
-                             { 1, 1, 1 } /* initial color */
-    );
+}
+
+void scene_structure::initialize_camera(const YAML::Node& camera_config)
+{
+    camera_control.initialize(inputs,
+                              window); // Give access to the inputs and window
+                                       // global state to the camera controler
+    camera_control.set_rotation_axis_z();
+    YAML::Node eye_config = camera_config["eye"];
+    const cgp::vec3 eye = { eye_config["x"].as<float>(), eye_config["y"].as<float>(), eye_config["z"].as<float>() };
+    YAML::Node focus_config = camera_config["focus"];
+    const cgp::vec3 focus = { focus_config["x"].as<float>(), focus_config["y"].as<float>(), focus_config["z"].as<float>() };
+    camera_control.look_at(eye, focus);
+}
+
+void scene_structure::initialize_player(const YAML::Node &player_config)
+{
+    const YAML::Node player_position_config = player_config["position"];
+    const cgp::vec3 player_position = { player_position_config["x"].as<float>(), player_position_config["y"].as<float>(), player_position_config["z"].as<float>() };
+    const YAML::Node player_size_config = player_config["size"];
+    const cgp::vec3 player_size = { player_size_config["x"].as<float>(), player_size_config["y"].as<float>(), player_size_config["z"].as<float>() };
+    shape_deformable_structure player;
+    player.initialize(mesh_primitive_ellipsoid(player_size));
+    player.set_position_and_velocity(player_position);
+    deformables.push_back(player);
+}
+
+void scene_structure::initialize_planets(const YAML::Node &planets_config)
+{
+    for (auto planet_id_iterator = planets_config.begin(); planet_id_iterator != planets_config.end(); planet_id_iterator++)
+    {
+        int planet_id = planet_id_iterator->as<int>();
+        std::ostringstream filename;
+        filename << "config/planets/planet_" << std::setw(2) << std::setfill('0') << planet_id << ".yaml";
+        YAML::Node planet_config = YAML::LoadFile(filename.str());
+
+        const YAML::Node planet_position_config = planet_config["position"];
+        const cgp::vec3 planet_position = { planet_position_config["x"].as<float>(), planet_position_config["y"].as<float>(), planet_position_config["z"].as<float>() };
+        const float planet_radius = planet_config["radius"].as<float>();
+        const float planet_attraction_radius = planet_config["attraction_radius"].as<float>();
+
+        planets.emplace_back(planet_radius, planet_attraction_radius, planet_position);
+    }
 }
 
 void scene_structure::display_frame()
@@ -46,7 +72,7 @@ void scene_structure::display_frame()
     // Compute the simulation
     if (param.time_step > 1e-6f)
     {
-        simulation_step(deformables, param);
+        simulation_step(deformables, planets, param);
     }
 
     // Display all the deformable shapes
@@ -57,6 +83,19 @@ void scene_structure::display_frame()
         if (gui.display_wireframe)
         {
             draw_wireframe(deformables[k].drawable);
+        }
+    }
+
+    // display the planets
+
+    for (int planet_index = 0; planet_index < planets.size(); planet_index++)
+    {
+        shape_deformable_structure &shape = planets[planet_index].get_shape();
+        shape.update_drawable();
+        draw(shape.drawable);
+        if (gui.display_wireframe)
+        {
+            draw_wireframe(shape.drawable);
         }
     }
 

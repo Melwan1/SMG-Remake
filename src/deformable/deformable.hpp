@@ -37,8 +37,8 @@ struct shape_deformable_structure
     // Set an initial translation and velocity to the deformed shape and update
     // the com
     void set_position_and_velocity(cgp::vec3 translation,
-                                   cgp::vec3 linear_velocity,
-                                   cgp::vec3 angular_velocity);
+                                   cgp::vec3 linear_velocity = cgp::vec3(0.0, 0.0, 0.0),
+                                   cgp::vec3 angular_velocity = cgp::vec3(0.0, 0.0, 0.0));
 
     // Returns the number of positions
     int size() const;
