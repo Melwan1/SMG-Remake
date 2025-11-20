@@ -2,9 +2,14 @@ id: 1
 planets:
   - 1
 player:
-  x: 0.0
-  y: 0.0
-  z: 1.9
+  position:
+    x: 0.0
+    y: 0.0
+    z: 1.9
+  size:
+    x: 0.07
+    y: 0.07
+    z: 0.2
 camera:
   eye:
     x: 3.0
@@ -14,3 +19,7 @@ camera:
     x: 0.0
     y: 0.0
     z: 1.5
+  rotation_axis:
+    x: 0.0
+    y: 0.0
+    z: 0.0

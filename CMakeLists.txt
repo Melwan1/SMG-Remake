@@ -1,6 +1,26 @@
 # This is a generic CMake setup for CGP library use
 cmake_minimum_required(VERSION 3.8) 
 
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+
+# Set Compiler for Unix system
+if(UNIX)
+   set(CMAKE_CXX_COMPILER g++)                      # Can switch to clang++ if prefered
+   add_definitions(-g -O2 -std=c++14 -Wall -Wextra -Wfatal-errors -Wno-pragmas -Wno-unknown-warning-option) # Can adapt compiler flags if needed
+   add_definitions(-Wno-sign-compare -Wno-type-limits) # Remove some warnings
+endif()
+
+# Link with YAML-CPP
+
+include(FetchContent)
+
+FetchContent_Declare(
+  yaml-cpp
+  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+  GIT_TAG 0.8.0 # Can be a tag (yaml-cpp-x.x.x), a commit hash, or a branch name (master)
+)
+FetchContent_MakeAvailable(yaml-cpp)
+
 # Relative path to the CGP library
 # => You may need to adapt this directory to your relative path in the case you move your directory
 set(PATH_TO_CGP "cgp/library/" CACHE PATH "Relative path to CGP library location") 
@@ -17,6 +37,7 @@ if(NOT EXISTS ${ABS_PATH_TO_CGP})
    message(FATAL_ERROR "\nError: Could not import the CGP library using the relative path \"${PATH_TO_CGP}\".\n Please adjust this path in the CMakeLists.txt=>PATH_TO_CGP or via the cmake-gui\n Note that this relative path should point to the directory cgp/library/ ")
    return()
 endif()
+
 
 # Compile for Release with Debug Info
 set(CMAKE_BUILD_TYPE RelWithDebInfo) 
@@ -65,13 +86,6 @@ add_definitions(-DCGP_OPENGL_3_3)   # for OpenGL 3.3
 add_executable(${executable_name} ${src_files_cgp} ${src_files_third_party} ${src_files})
 
 
-# Set Compiler for Unix system
-if(UNIX)
-   set(CMAKE_CXX_COMPILER g++)                      # Can switch to clang++ if prefered
-   add_definitions(-g -O2 -std=c++14 -Wall -Wextra -Wfatal-errors -Wno-pragmas -Wno-unknown-warning-option) # Can adapt compiler flags if needed
-   add_definitions(-Wno-sign-compare -Wno-type-limits) # Remove some warnings
-endif()
-
 
 # Set Compiler for Windows/Visual Studio
 if(MSVC)
@@ -93,8 +107,7 @@ endif()
 
 
 # Link options for Unix
-target_link_libraries(${executable_name} ${GLFW_LIBRARIES})
+target_link_libraries(${executable_name} ${GLFW_LIBRARIES} yaml-cpp::yaml-cpp)
 if(UNIX)
    target_link_libraries(${executable_name} dl) #dlopen is required by Glad on Unix
 endif()
-

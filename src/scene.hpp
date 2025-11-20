@@ -4,6 +4,8 @@
 #include "objects/planet.hpp"
 #include "simulation/simulation.hpp"
 
+#include <yaml-cpp/yaml.h>
+
 using cgp::mesh_drawable;
 
 enum primitive_type_enum
@@ -61,8 +63,9 @@ struct scene_structure : scene_inputs_generic
     // Functions
     // ****************************** //
 
-    void initialize_camera();
-    void initialize_planets_and_player();
+    void initialize_camera(const YAML::Node& camera_config);
+    void initialize_player(const YAML::Node &player_config);
+    void initialize_planets(const YAML::Node &planets_config);
 
     void initialize(); // Standard initialization to be called before the
                        // animation loop

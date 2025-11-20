@@ -2,36 +2,53 @@
 
 void scene_structure::initialize()
 {
-    initialize_camera();
+    YAML::Node scene_config = YAML::LoadFile("config/scenes/scene_01.yaml");
+    YAML::Node planet_config = YAML::LoadFile("config/planets/planet_01.yaml");
+    initialize_camera(scene_config["camera"]);
     global_frame.initialize_data_on_gpu(mesh_primitive_frame());
 
     // A sphere used to display the collision model
     sphere.initialize_data_on_gpu(
         mesh_primitive_sphere(1.0f, { 0, 0, 0 }, 10, 5));
 
-    initialize_planets_and_player();
+    initialize_player(scene_config["player"]);
+    initialize_planets(planet_config);
 
 }
 
-void scene_structure::initialize_camera()
+void scene_structure::initialize_camera(const YAML::Node& camera_config)
 {
     camera_control.initialize(inputs,
                               window); // Give access to the inputs and window
                                        // global state to the camera controler
     camera_control.set_rotation_axis_z();
-    camera_control.look_at({ 3.0f, 2.0f, 2.0f }, { 0, 0, 1.5 }, { 0, 0, 0 });
+    YAML::Node eye_config = camera_config["eye"];
+    const cgp::vec3 eye = { eye_config["x"].as<float>(), eye_config["y"].as<float>(), eye_config["z"].as<float>() };
+    YAML::Node focus_config = camera_config["focus"];
+    const cgp::vec3 focus = { focus_config["x"].as<float>(), focus_config["y"].as<float>(), focus_config["z"].as<float>() };
+    camera_control.look_at(eye, focus);
 }
 
-void scene_structure::initialize_planets_and_player()
+void scene_structure::initialize_player(const YAML::Node &player_config)
 {
-    planets.emplace_back(0.7f, 10.5f, cgp::vec3(0.0f, 0.0f, 1.0f));
+    const YAML::Node player_position_config = player_config["position"];
+    const cgp::vec3 player_position = { player_position_config["x"].as<float>(), player_position_config["y"].as<float>(), player_position_config["z"].as<float>() };
+    const YAML::Node player_size_config = player_config["size"];
+    const cgp::vec3 player_size = { player_size_config["x"].as<float>(), player_size_config["y"].as<float>(), player_size_config["z"].as<float>() };
     shape_deformable_structure player;
-    player.initialize(mesh_primitive_ellipsoid(cgp::vec3(0.07, 0.07, 0.2),
-            cgp::vec3(0.0, 0.0, 0.0)));
-    player.set_position_and_velocity(cgp::vec3(0.0, 0.0, 1.9),
-            cgp::vec3(0.0, 0.0, 0.0),
-            cgp::vec3(0.0, .0, 0.0));
+    player.initialize(mesh_primitive_ellipsoid(player_size));
+    player.set_position_and_velocity(player_position);
     deformables.push_back(player);
+}
+
+void scene_structure::initialize_planets(const YAML::Node &planets_config)
+{
+    const YAML::Node planet_position_config = planets_config["position"];
+    const cgp::vec3 planet_position = { planet_position_config["x"].as<float>(), planet_position_config["y"].as<float>(), planet_position_config["z"].as<float>() };
+    const float planet_radius = planets_config["radius"].as<float>();
+    const float planet_attraction_radius = planets_config["attraction_radius"].as<float>();
+
+    planets.emplace_back(planet_radius, planet_attraction_radius, planet_position);
 }
 
 void scene_structure::display_frame()
