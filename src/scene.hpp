@@ -61,6 +61,9 @@ struct scene_structure : scene_inputs_generic
     // Functions
     // ****************************** //
 
+    void initialize_camera();
+    void initialize_planets_and_player();
+
     void initialize(); // Standard initialization to be called before the
                        // animation loop
     void
