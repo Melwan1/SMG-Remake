@@ -3,7 +3,7 @@
 void scene_structure::initialize()
 {
     YAML::Node scene_config = YAML::LoadFile("config/scenes/scene_01.yaml");
-    YAML::Node planet_config = YAML::LoadFile("config/planets/planet_01.yaml");
+    YAML::Node planet_config = scene_config["planets"];
     initialize_camera(scene_config["camera"]);
     global_frame.initialize_data_on_gpu(mesh_primitive_frame());
 
@@ -43,12 +43,20 @@ void scene_structure::initialize_player(const YAML::Node &player_config)
 
 void scene_structure::initialize_planets(const YAML::Node &planets_config)
 {
-    const YAML::Node planet_position_config = planets_config["position"];
-    const cgp::vec3 planet_position = { planet_position_config["x"].as<float>(), planet_position_config["y"].as<float>(), planet_position_config["z"].as<float>() };
-    const float planet_radius = planets_config["radius"].as<float>();
-    const float planet_attraction_radius = planets_config["attraction_radius"].as<float>();
+    for (auto planet_id_iterator = planets_config.begin(); planet_id_iterator != planets_config.end(); planet_id_iterator++)
+    {
+        int planet_id = planet_id_iterator->as<int>();
+        std::ostringstream filename;
+        filename << "config/planets/planet_" << std::setw(2) << std::setfill('0') << planet_id << ".yaml";
+        YAML::Node planet_config = YAML::LoadFile(filename.str());
 
-    planets.emplace_back(planet_radius, planet_attraction_radius, planet_position);
+        const YAML::Node planet_position_config = planet_config["position"];
+        const cgp::vec3 planet_position = { planet_position_config["x"].as<float>(), planet_position_config["y"].as<float>(), planet_position_config["z"].as<float>() };
+        const float planet_radius = planet_config["radius"].as<float>();
+        const float planet_attraction_radius = planet_config["attraction_radius"].as<float>();
+
+        planets.emplace_back(planet_radius, planet_attraction_radius, planet_position);
+    }
 }
 
 void scene_structure::display_frame()
