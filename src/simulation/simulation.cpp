@@ -5,6 +5,8 @@
 #include "deformable/deformable.hpp"
 #include "objects/planet.hpp"
 
+#define PLAYER_CONTINUOUS_DISPLACEMENT { 0.01, 0, 0 }
+
 using namespace cgp;
 
 // Compute the polar decomposition of the matrix M and return the rotation such
@@ -100,8 +102,35 @@ void simulation_step(std::vector<shape_deformable_structure> &deformables,
 
             // Update the vertex position
             deformable.position[k] = deformable.position_predict[k];
+            
         }
     }
+
+    // FIXME: try to move the player forward on the planet
+
+    for (const Planet& planet : planets) {
+        for (const shape_deformable_structure& deformable : deformables)
+        {
+            if (planet.should_attract_deformable(deformable)) {
+
+            }
+        }
+    }
+    const Planet &planet = planets[0];
+    cgp::vec3 normal = cgp::normalize(deformables[0].com - planet.get_center());
+    std::cout << normal << "\n";
+    cgp::vec3 movement = PLAYER_CONTINUOUS_DISPLACEMENT;
+    float movement_amplitude = std::sqrt(cgp::dot(movement, movement));
+    cgp::vec3 direction = cgp::cross(normal, normalize(movement));
+
+    cgp::vec3 displacement = direction * movement_amplitude;
+    
+    deformables[0].com += displacement * direction;
+    for (int k = 0; k < deformables[0].position.size(); k++)
+    {
+        deformables[0].position[k] += displacement;
+    }
+
 }
 
 // Compute the shape matching on all the deformable shapes

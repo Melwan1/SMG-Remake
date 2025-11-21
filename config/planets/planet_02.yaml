@@ -1,11 +1,11 @@
 id: 1
 position:
   x: 0
-  y: 0
+  y: 5
   z: 1
 radius: 0.7
 attraction_radius: 2.0
 color:
-  r: 0.4
+  r: 1.0
   g: 0.6
-  b: 1.0
+  b: 0.3
