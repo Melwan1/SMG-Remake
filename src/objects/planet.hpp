@@ -18,6 +18,8 @@ public:
     const cgp::vec3 &get_center() const;
     int get_sampling_horizontal() const;
     int get_sampling_vertical() const;
+
+    bool should_attract_deformable(const shape_deformable_structure &deformable) const;
     const shape_deformable_structure &get_shape() const;
     shape_deformable_structure &get_shape();
 

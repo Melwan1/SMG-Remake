@@ -1,6 +1,7 @@
 id: 1
 planets:
   - 1
+  - 2
 player:
   position:
     x: 0.0
