@@ -75,6 +75,15 @@ void scene_structure::display_frame()
         simulation_step(deformables, planets, param);
     }
 
+    for (int planet_index = 0; planet_index < planets.size(); planet_index++)
+    {
+        if (planets[planet_index].should_attract_deformable(deformables[0]))
+        {
+            cgp::vec3 normal = normalize(deformables[0].com - planets[planet_index].get_center());
+            //camera_control.look_at(deformables[0].com + normal * 1.6 * planets[planet_index].get_radius(), deformables[0].com);
+        }
+    }
+
     // Display all the deformable shapes
     for (int k = 0; k < deformables.size(); ++k)
     {
