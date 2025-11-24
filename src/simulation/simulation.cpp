@@ -294,11 +294,9 @@ void collision_with_planets(
             auto &planet = planets[j];
             const auto planet_r = planet.get_radius();
             const auto planet_center = planet.get_center();
-            std::cout << "Trying collision with planet: " << j << "\n";
 
             if (bounding_box::collide(bbox[i], planet_bbox[j]))
             {
-                std::cout << "Object may collide with planet: " << j << "\n";
                 // objects MAY collide
                 for (auto &deformable_position : deformable.position_predict)
                 {
@@ -380,7 +378,8 @@ void planet_attraction(std::vector<shape_deformable_structure> &deformables,
                 constexpr float random_mass_factor = 25;
                 // In reality, it's : G * m1 * m2 / (n * n)
                     planet_gravity =
-                    random_mass_factor * normalize(planet_vector) / (n * n);
+                    random_mass_factor * normalize(planet_vector);
+                    break;
             }
         }
 
