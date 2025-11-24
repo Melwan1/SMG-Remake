@@ -109,28 +109,25 @@ void simulation_step(std::vector<shape_deformable_structure> &deformables,
     // FIXME: try to move the player forward on the planet
 
     for (const Planet& planet : planets) {
-        for (const shape_deformable_structure& deformable : deformables)
+        for (shape_deformable_structure& deformable : deformables)
         {
             if (planet.should_attract_deformable(deformable)) {
 
+                cgp::vec3 normal = cgp::normalize(deformable.com - planet.get_center());
+                cgp::vec3 movement = PLAYER_CONTINUOUS_DISPLACEMENT;
+                float movement_amplitude = std::sqrt(cgp::dot(movement, movement));
+                cgp::vec3 direction = cgp::cross(normal, normalize(movement));
+
+                cgp::vec3 displacement = direction * movement_amplitude;
+                
+                deformable.com += displacement * direction;
+                for (int k = 0; k < deformable.position.size(); k++)
+                {
+                    deformable.position[k] += displacement;
+                }
             }
         }
     }
-    const Planet &planet = planets[0];
-    cgp::vec3 normal = cgp::normalize(deformables[0].com - planet.get_center());
-    std::cout << normal << "\n";
-    cgp::vec3 movement = PLAYER_CONTINUOUS_DISPLACEMENT;
-    float movement_amplitude = std::sqrt(cgp::dot(movement, movement));
-    cgp::vec3 direction = cgp::cross(normal, normalize(movement));
-
-    cgp::vec3 displacement = direction * movement_amplitude;
-    
-    deformables[0].com += displacement * direction;
-    for (int k = 0; k < deformables[0].position.size(); k++)
-    {
-        deformables[0].position[k] += displacement;
-    }
-
 }
 
 // Compute the shape matching on all the deformable shapes
@@ -280,7 +277,11 @@ void collision_with_planets(
     for (int kp = 0; kp < N_planet; ++kp)
     {
         bounding_box b;
+
         b.initialize(planets[kp].get_mesh().position);
+        // offset the bounding box with the position of the planet
+        b.p_min += planets[kp].get_center();
+        b.p_max += planets[kp].get_center();
         b.extends(2 * planets[kp].get_radius());
         planet_bbox.push_back(b);
     }
@@ -372,13 +373,13 @@ void planet_attraction(std::vector<shape_deformable_structure> &deformables,
             const float n = norm(planet_vector);
             const auto attraction_radius = planet.get_attraction_radius();
 
-            std::cout << n << ", " << attraction_radius << std::endl;
             if (n <= attraction_radius)
             {
                 constexpr float random_mass_factor = 25;
                 // In reality, it's : G * m1 * m2 / (n * n)
-                planet_gravity +=
-                    random_mass_factor * normalize(planet_vector) / (n * n);
+                    planet_gravity =
+                    random_mass_factor * normalize(planet_vector);
+                    break;
             }
         }
 
