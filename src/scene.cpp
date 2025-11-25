@@ -1,5 +1,7 @@
 #include "scene.hpp"
 
+#include "camera/camera_loader.hpp"
+
 void scene_structure::initialize(const fs::path &filename)
 {
     // A sphere used to display the collision model
@@ -20,7 +22,12 @@ void scene_structure::initialize(const fs::path &filename)
     YAML::Node scene_config = YAML::LoadFile("config/scenes" / filename);
     YAML::Node planet_config = scene_config["planets"];
     YAML::Node black_hole_config = scene_config["black_holes"];
-    initialize_camera(scene_config["camera"]);
+    std::ostringstream camera_fileoss;
+    camera_fileoss << "camera_" << std::setw(2) << std::setfill('0') << scene_config["camera"].as<int>() << ".yaml";
+    const fs::path camera_filename = camera_fileoss.str();
+    std::cout << "camera filename: " << camera_filename.c_str() << "\n";
+    const YAML::Node camera_config = YAML::LoadFile("config/camera" / camera_filename);
+    initialize_camera(camera_filename, camera_config);
     global_frame.initialize_data_on_gpu(mesh_primitive_frame());
 
     initialize_player(scene_config["player"]);
@@ -28,7 +35,7 @@ void scene_structure::initialize(const fs::path &filename)
     initialize_black_holes(black_hole_config);
 }
 
-void scene_structure::initialize_camera(const YAML::Node &camera_config)
+void scene_structure::initialize_camera(const fs::path &camera_path, const YAML::Node &camera_config)
 {
     camera_control.initialize(inputs,
                               window); // Give access to the inputs and window
@@ -43,6 +50,8 @@ void scene_structure::initialize_camera(const YAML::Node &camera_config)
                               focus_config["y"].as<float>(),
                               focus_config["z"].as<float>() };
     camera_control.look_at(eye, focus);
+    CameraLoader loader(camera_path);
+    _camera_ptr = std::move(loader.load());
 }
 
 void scene_structure::initialize_player(const YAML::Node &player_config)

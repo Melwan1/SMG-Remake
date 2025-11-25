@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <memory>
 
 #include <yaml-cpp/yaml.h>
 
@@ -8,6 +9,7 @@
 #include "objects/black_hole.hpp"
 #include "objects/planet.hpp"
 #include "simulation/simulation.hpp"
+#include "camera/camera.hpp"
 
 using cgp::mesh_drawable;
 
@@ -38,6 +40,7 @@ struct scene_structure : scene_inputs_generic
     // ****************************** //
     // Elements and shapes of the scene
     // ****************************** //
+    std::unique_ptr<Camera> _camera_ptr = nullptr;
     camera_controller_orbit_euler camera_control;
     camera_projection_perspective camera_projection;
     window_structure window;
@@ -71,7 +74,7 @@ struct scene_structure : scene_inputs_generic
     // Functions
     // ****************************** //
 
-    void initialize_camera(const YAML::Node& camera_config);
+    void initialize_camera(const fs::path &camera_path, const YAML::Node& camera_config);
     void initialize_player(const YAML::Node &player_config);
     void initialize_planets(const YAML::Node &planets_config);
     void initialize_black_holes(const YAML::Node &black_holes_config);
