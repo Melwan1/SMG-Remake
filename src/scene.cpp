@@ -17,7 +17,7 @@ void scene_structure::initialize(const fs::path &filename)
     glEnablei(GL_BLEND, 0);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    YAML::Node scene_config = YAML::LoadFile(filename);
+    YAML::Node scene_config = YAML::LoadFile("config/scenes" / filename);
     YAML::Node planet_config = scene_config["planets"];
     YAML::Node black_hole_config = scene_config["black_holes"];
     initialize_camera(scene_config["camera"]);

@@ -48,7 +48,7 @@ int main(int, char *argv[])
 
     // Custom scene initialization
     std::cout << "Initialize data of the scene ..." << std::endl;
-    scene.initialize("config/scene_02.yaml");
+    scene.initialize("scene_02.yaml");
     std::cout << "Initialization finished\n" << std::endl;
 
     // ************************ //
