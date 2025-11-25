@@ -1,0 +1,27 @@
+id: 2
+planets:
+  - 2
+black_holes:
+  - 1
+player:
+  position:
+    x: 0.0
+    y: 0.0
+    z: 1.9
+  size:
+    x: 0.07
+    y: 0.07
+    z: 0.2
+camera:
+  eye:
+    x: 3.0
+    y: 2.0
+    z: 2.0
+  focus:
+    x: 0.0
+    y: 0.0
+    z: 1.5
+  rotation_axis:
+    x: 0.0
+    y: 0.0
+    z: 0.0

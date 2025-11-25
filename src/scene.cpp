@@ -2,8 +2,9 @@
 
 void scene_structure::initialize()
 {
-    YAML::Node scene_config = YAML::LoadFile("config/scenes/scene_01.yaml");
+    YAML::Node scene_config = YAML::LoadFile("config/scenes/scene_02.yaml");
     YAML::Node planet_config = scene_config["planets"];
+    YAML::Node black_hole_config = scene_config["black_holes"];
     initialize_camera(scene_config["camera"]);
     global_frame.initialize_data_on_gpu(mesh_primitive_frame());
 
@@ -13,6 +14,7 @@ void scene_structure::initialize()
 
     initialize_player(scene_config["player"]);
     initialize_planets(planet_config);
+    initialize_black_holes(black_hole_config);
 
 }
 
@@ -59,6 +61,24 @@ void scene_structure::initialize_planets(const YAML::Node &planets_config)
     }
 }
 
+void scene_structure::initialize_black_holes(const YAML::Node &black_holes_config)
+{
+    for (auto black_hole_id_iterator = black_holes_config.begin(); black_hole_id_iterator != black_holes_config.end(); black_hole_id_iterator++)
+    {
+        int black_hole_id = black_hole_id_iterator->as<int>();
+        std::ostringstream filename;
+        filename << "config/black_holes/black_hole_" << std::setw(2) << std::setfill('0') << black_hole_id << ".yaml";
+        YAML::Node black_hole_config = YAML::LoadFile(filename.str());
+
+        const YAML::Node black_hole_position_config = black_hole_config["position"];
+        const cgp::vec3 black_hole_position = { black_hole_position_config["x"].as<float>(), black_hole_position_config["y"].as<float>(), black_hole_position_config["z"].as<float>() };
+        const float black_hole_radius = black_hole_config["radius"].as<float>();
+        const float black_hole_attraction_radius = black_hole_config["attraction_radius"].as<float>();
+
+        black_holes.emplace_back(black_hole_radius, black_hole_attraction_radius, black_hole_position);
+    }
+}
+
 void scene_structure::display_frame()
 {
     // Set the light to the current position of the camera
@@ -92,6 +112,19 @@ void scene_structure::display_frame()
         if (gui.display_wireframe)
         {
             draw_wireframe(deformables[k].drawable);
+        }
+    }
+
+    // display the black holes
+
+    for (int black_hole_index = 0; black_hole_index < black_holes.size(); black_hole_index++)
+    {
+        black_holes[black_hole_index].update_mesh_from_camera(camera_control.camera_model);
+        cgp::mesh_drawable drawable = black_holes[black_hole_index].update_drawable();
+        draw(drawable);
+        if (gui.display_wireframe)
+        {
+            draw_wireframe(drawable);
         }
     }
 

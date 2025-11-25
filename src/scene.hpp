@@ -1,10 +1,11 @@
 #pragma once
 
+#include <yaml-cpp/yaml.h>
+
 #include "environment.hpp"
+#include "objects/black_hole.hpp"
 #include "objects/planet.hpp"
 #include "simulation/simulation.hpp"
-
-#include <yaml-cpp/yaml.h>
 
 using cgp::mesh_drawable;
 
@@ -51,6 +52,8 @@ struct scene_structure : scene_inputs_generic
     simulation_parameter param;
     std::vector<shape_deformable_structure> deformables;
     std::vector<Planet> planets = std::vector<Planet>();
+    std::vector<BlackHole> black_holes = std::vector<BlackHole>();
+
     void add_new_deformable_shape(vec3 const &center, vec3 const &velocity,
                                   vec3 const &angular_velocity,
                                   vec3 const &color);
@@ -66,6 +69,7 @@ struct scene_structure : scene_inputs_generic
     void initialize_camera(const YAML::Node& camera_config);
     void initialize_player(const YAML::Node &player_config);
     void initialize_planets(const YAML::Node &planets_config);
+    void initialize_black_holes(const YAML::Node &black_holes_config);
 
     void initialize(); // Standard initialization to be called before the
                        // animation loop

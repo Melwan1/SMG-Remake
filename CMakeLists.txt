@@ -1,5 +1,5 @@
 # This is a generic CMake setup for CGP library use
-cmake_minimum_required(VERSION 3.8) 
+cmake_minimum_required(VERSION 3.8)
 
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
@@ -12,18 +12,25 @@ endif()
 
 # Link with YAML-CPP
 
-include(FetchContent)
+find_package(yaml-cpp 0.8.0 QUIET)
 
-FetchContent_Declare(
-  yaml-cpp
-  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG 0.8.0 # Can be a tag (yaml-cpp-x.x.x), a commit hash, or a branch name (master)
-)
-FetchContent_MakeAvailable(yaml-cpp)
+if (NOT yaml-cpp_FOUND)
+   message(STATUS "yaml-cpp not found locally -> fetching the repository")
+
+   include(FetchContent)
+
+   FetchContent_Declare(
+       yaml-cpp
+       GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+       GIT_TAG 0.8.0
+   )
+
+   FetchContent_MakeAvailable(yaml-cpp)
+endif()
 
 # Relative path to the CGP library
 # => You may need to adapt this directory to your relative path in the case you move your directory
-set(PATH_TO_CGP "cgp/library/" CACHE PATH "Relative path to CGP library location") 
+set(PATH_TO_CGP "cgp/library/" CACHE PATH "Relative path to CGP library location")
 
 # Set this value to ON if you want to use the precompiled GLFW Library
 OPTION(MACOS_GLFW_PRECOMPILED "Use precompiled library for GLFW on MacOS" OFF)
@@ -40,8 +47,8 @@ endif()
 
 
 # Compile for Release with Debug Info
-set(CMAKE_BUILD_TYPE RelWithDebInfo) 
-set(CMAKE_CONFIGURATION_TYPES RelWithDebInfo) 
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
+set(CMAKE_CONFIGURATION_TYPES RelWithDebInfo)
 # uncomment the following to activate the other possibilities (Debug, Release)
 #set(CMAKE_CONFIGURATION_TYPES RelWithDebInfo; Release; Debug )
 
@@ -92,7 +99,7 @@ if(MSVC)
    set_property( DIRECTORY PROPERTY VS_STARTUP_PROJECT  ${executable_name} ) # default project (avoids AllBuild)
    set_target_properties( ${executable_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}$<0:> ) # default output in root dir
    set_target_properties( ${executable_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} ) # default debug execution in root dir
-   
+
    # Avoids the warning /W3 overided by /W4 when using Ninja
    if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
     string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
