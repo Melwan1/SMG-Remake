@@ -2,6 +2,8 @@
 
 #include "camera/camera_loader.hpp"
 
+#include "camera/attached_to_player_camera.hpp"
+
 void scene_structure::initialize(const fs::path &filename)
 {
     // A sphere used to display the collision model
@@ -51,7 +53,7 @@ void scene_structure::initialize_camera(const fs::path &camera_path, const YAML:
                               focus_config["z"].as<float>() };
     camera_control.look_at(eye, focus);
     CameraLoader loader(camera_path);
-    _camera_ptr = std::move(loader.load());
+    camera_ptr = std::move(loader.load());
 }
 
 void scene_structure::initialize_player(const YAML::Node &player_config)
@@ -69,6 +71,12 @@ void scene_structure::initialize_player(const YAML::Node &player_config)
     player.initialize(mesh_primitive_ellipsoid(player_size));
     player.set_position_and_velocity(player_position);
     deformables.push_back(player);
+
+    // attach camera to player if applicable
+    AttachedToPlayerCamera* attached_camera = dynamic_cast<AttachedToPlayerCamera*>(camera_ptr.get());
+    if (attached_camera) {
+        attached_camera->attach_to_player(player);
+    }
 }
 
 void scene_structure::initialize_planets(const YAML::Node &planets_config)

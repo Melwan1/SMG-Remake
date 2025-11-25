@@ -40,7 +40,7 @@ struct scene_structure : scene_inputs_generic
     // ****************************** //
     // Elements and shapes of the scene
     // ****************************** //
-    std::unique_ptr<Camera> _camera_ptr = nullptr;
+    std::unique_ptr<Camera> camera_ptr = nullptr;
     camera_controller_orbit_euler camera_control;
     camera_projection_perspective camera_projection;
     window_structure window;

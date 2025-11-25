@@ -21,6 +21,16 @@ AttachedToPlayerCamera::AttachedToPlayerCamera(const YAML::Node &config)
     };
 }
 
+void AttachedToPlayerCamera::attach_to_player(shape_deformable_structure& player)
+{
+    _attached_player = &player;
+}
+
+const shape_deformable_structure *AttachedToPlayerCamera::get_attached_player() const
+{
+    return _attached_player;
+}
+
 const cgp::vec3 AttachedToPlayerCamera::get_eye() const
 {
     return { 0, 0, 0 };
