@@ -21,3 +21,18 @@ cgp::mesh_drawable BlackHole::update_drawable()
 {
     return _billboard.update_drawable();
 }
+
+float BlackHole::get_radius() const
+{
+    return _radius;
+}
+
+float BlackHole::get_attraction_radius() const
+{
+    return _attraction_radius;
+}
+
+const cgp::vec3 &BlackHole::get_center() const
+{
+    return _center;
+}

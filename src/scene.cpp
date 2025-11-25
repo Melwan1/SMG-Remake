@@ -7,7 +7,8 @@ void scene_structure::initialize()
         mesh_primitive_sphere(1.0f, { 0, 0, 0 }, 10, 5));
 
     // Initialize the black_hole texture
-    black_hole_opengl_image = std::make_unique<opengl_texture_image_structure>();
+    black_hole_opengl_image = std::make_unique<
+        opengl_texture_image_structure>();
     black_hole_opengl_image->load_and_initialize_texture_2d_on_gpu(
         black_hole_global_texture_path);
     BlackHole::black_hole_global_texture = black_hole_opengl_image.get();
@@ -31,7 +32,7 @@ void scene_structure::initialize_camera(const YAML::Node &camera_config)
 {
     camera_control.initialize(inputs,
                               window); // Give access to the inputs and window
-    // global state to the camera controler
+    // global state to the camera controller
     camera_control.set_rotation_axis_z();
     YAML::Node eye_config = camera_config["eye"];
     const cgp::vec3 eye = { eye_config["x"].as<float>(),
@@ -64,7 +65,7 @@ void scene_structure::initialize_player(const YAML::Node &player_config)
 void scene_structure::initialize_planets(const YAML::Node &planets_config)
 {
     for (auto planet_id_iterator = planets_config.begin(); planet_id_iterator !=
-         planets_config.end(); planet_id_iterator++)
+         planets_config.end(); ++planet_id_iterator)
     {
         int planet_id = planet_id_iterator->as<int>();
         std::ostringstream filename;
@@ -91,7 +92,7 @@ void scene_structure::initialize_black_holes(
 {
     for (auto black_hole_id_iterator = black_holes_config.begin();
          black_hole_id_iterator != black_holes_config.end();
-         black_hole_id_iterator++)
+         ++black_hole_id_iterator)
     {
         int black_hole_id = black_hole_id_iterator->as<int>();
         std::ostringstream filename;
@@ -128,7 +129,24 @@ void scene_structure::display_frame()
     // Compute the simulation
     if (param.time_step > 1e-6f)
     {
-        simulation_step(deformables, planets, param);
+        simulation_step(deformables, planets, black_holes, param,
+                        camera_control.camera_model);
+    }
+
+    // Delete the black-holed deformables
+    for (auto deformable = deformables.cbegin(); deformables.cend() !=
+         deformable;)
+    {
+        // TODO : not the actual timer in seconds...
+        if (deformable->got_black_holed != nullptr && deformable->dt_timer >=
+            param.black_hole_timer)
+        {
+            deformable = deformables.erase(deformable);
+        }
+        else
+        {
+            ++deformable;
+        }
     }
 
     for (int planet_index = 0; planet_index < planets.size(); planet_index++)
@@ -138,17 +156,6 @@ void scene_structure::display_frame()
             cgp::vec3 normal = normalize(
                 deformables[0].com - planets[planet_index].get_center());
             //camera_control.look_at(deformables[0].com + normal * 1.6 * planets[planet_index].get_radius(), deformables[0].com);
-        }
-    }
-
-    // Display all the deformable shapes
-    for (int k = 0; k < deformables.size(); ++k)
-    {
-        deformables[k].update_drawable();
-        draw(deformables[k].drawable);
-        if (gui.display_wireframe)
-        {
-            draw_wireframe(deformables[k].drawable);
         }
     }
 
@@ -165,6 +172,17 @@ void scene_structure::display_frame()
         if (gui.display_wireframe)
         {
             draw_wireframe(drawable);
+        }
+    }
+
+    // Display all the deformable shapes
+    for (int k = 0; k < deformables.size(); ++k)
+    {
+        deformables[k].update_drawable();
+        draw(deformables[k].drawable);
+        if (gui.display_wireframe)
+        {
+            draw_wireframe(deformables[k].drawable);
         }
     }
 
@@ -236,6 +254,8 @@ void scene_structure::display_gui()
     ImGui::SliderFloat("Plasticity", &param.plasticity, 0, 1);
 
     ImGui::Spacing();
+    ImGui::SliderFloat("Black hole timer", &param.black_hole_timer, 0.0f,
+                      4.0f);
     ImGui::Spacing();
     ImGui::Spacing();
     ImGui::SliderFloat("Speed new shape", &gui.throwing_speed, 0.0f, 40.0f);

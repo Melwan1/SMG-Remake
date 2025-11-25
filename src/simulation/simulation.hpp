@@ -17,8 +17,12 @@ struct simulation_parameter
 
     // Time step of the numerical time integration
     float time_step = 0.005f;
+
+    float black_hole_timer = 1.0f;
 };
 
 void simulation_step(std::vector<shape_deformable_structure> &deformables,
-                     std::vector<Planet> &planets,
-                     simulation_parameter const &param);
+                     const std::vector<Planet> &planets,
+                     const std::vector<BlackHole> &black_holes,
+                     simulation_parameter const &param,
+                     const cgp::camera_orbit_euler &camera);

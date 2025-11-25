@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cgp/cgp.hpp"
+#include "objects/black_hole.hpp"
 
 // Structure storing the data for the deformable structure simulation
 //  The structure stores the current deformed model parameters (position,
@@ -31,14 +32,19 @@ struct shape_deformable_structure
     // The drawable element representing the deformed shape
     cgp::mesh_drawable drawable;
 
+    const BlackHole *got_black_holed = nullptr;
+    float dt_timer = 0;
+
     // Initialize a reference structure from a mesh
     void initialize(cgp::mesh const &shape);
 
     // Set an initial translation and velocity to the deformed shape and update
     // the com
     void set_position_and_velocity(cgp::vec3 translation,
-                                   cgp::vec3 linear_velocity = cgp::vec3(0.0, 0.0, 0.0),
-                                   cgp::vec3 angular_velocity = cgp::vec3(0.0, 0.0, 0.0));
+                                   cgp::vec3 linear_velocity = cgp::vec3(
+                                       0.0, 0.0, 0.0),
+                                   cgp::vec3 angular_velocity = cgp::vec3(
+                                       0.0, 0.0, 0.0));
 
     // Returns the number of positions
     int size() const;

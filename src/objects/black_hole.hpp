@@ -12,6 +12,10 @@ public:
     void update_mesh_from_camera(cgp::camera_orbit_euler camera);
     cgp::mesh_drawable update_drawable();
 
+    float get_radius() const;
+    float get_attraction_radius() const;
+    const cgp::vec3 &get_center() const;
+
 private:
     Billboard _billboard;
     float _radius;
