@@ -1,0 +1,7 @@
+id: 3
+type: "ATTACHED_TO_PLAYER"
+distance_to_player: 2
+offset:
+  x: 0.0
+  y: 0.0
+  z: 0.0

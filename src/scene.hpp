@@ -1,5 +1,7 @@
 #pragma once
 
+#include <filesystem>
+
 #include <yaml-cpp/yaml.h>
 
 #include "environment.hpp"
@@ -8,6 +10,8 @@
 #include "simulation/simulation.hpp"
 
 using cgp::mesh_drawable;
+
+namespace fs = std::filesystem;
 
 enum primitive_type_enum
 {
@@ -72,7 +76,7 @@ struct scene_structure : scene_inputs_generic
     void initialize_planets(const YAML::Node &planets_config);
     void initialize_black_holes(const YAML::Node &black_holes_config);
 
-    void initialize(); // Standard initialization to be called before the
+    void initialize(const fs::path& filename); // Standard initialization to be called before the
                        // animation loop
     void
     display_frame(); // The frame display to be called within the animation loop

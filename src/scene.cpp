@@ -1,6 +1,6 @@
 #include "scene.hpp"
 
-void scene_structure::initialize()
+void scene_structure::initialize(const fs::path &filename)
 {
     // A sphere used to display the collision model
     sphere.initialize_data_on_gpu(
@@ -17,7 +17,7 @@ void scene_structure::initialize()
     glEnablei(GL_BLEND, 0);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    YAML::Node scene_config = YAML::LoadFile("config/scenes/scene_02.yaml");
+    YAML::Node scene_config = YAML::LoadFile(filename);
     YAML::Node planet_config = scene_config["planets"];
     YAML::Node black_hole_config = scene_config["black_holes"];
     initialize_camera(scene_config["camera"]);
@@ -64,6 +64,7 @@ void scene_structure::initialize_player(const YAML::Node &player_config)
 
 void scene_structure::initialize_planets(const YAML::Node &planets_config)
 {
+    std::cout << "Loading " << planets_config.size() << " planets." << "\n";
     for (auto planet_id_iterator = planets_config.begin(); planet_id_iterator !=
          planets_config.end(); ++planet_id_iterator)
     {
@@ -84,6 +85,7 @@ void scene_structure::initialize_planets(const YAML::Node &planets_config)
 
         planets.emplace_back(planet_radius, planet_attraction_radius,
                              planet_position);
+        std::cout << "Loaded planet: " << planet_id << "\n";
     }
 }
 
