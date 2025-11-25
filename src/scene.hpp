@@ -53,6 +53,7 @@ struct scene_structure : scene_inputs_generic
     std::vector<shape_deformable_structure> deformables;
     std::vector<Planet> planets = std::vector<Planet>();
     std::vector<BlackHole> black_holes = std::vector<BlackHole>();
+    std::unique_ptr<opengl_texture_image_structure> black_hole_opengl_image;
 
     void add_new_deformable_shape(vec3 const &center, vec3 const &velocity,
                                   vec3 const &angular_velocity,

@@ -2,7 +2,7 @@
 
 Billboard::Billboard(cgp::vec3 origin, float size)
     : _origin(origin)
-    , _size(size)
+      , _size(size)
 {}
 
 Billboard::Billboard(cgp::vec3 origin, float size,
@@ -10,7 +10,12 @@ Billboard::Billboard(cgp::vec3 origin, float size,
     : Billboard(origin, size)
 {}
 
-void Billboard::update_mesh_from_camera(cgp::camera_orbit_euler camera)
+void Billboard::set_texture(cgp::opengl_texture_image_structure *texture)
+{
+    _texture_structure = texture;
+}
+
+void Billboard::update_mesh_from_camera(const cgp::camera_orbit_euler& camera)
 {
     _drawable.clear();
 
@@ -34,7 +39,17 @@ cgp::mesh Billboard::get_mesh()
 
 void Billboard::initialize_data_on_gpu()
 {
-    _drawable.initialize_data_on_gpu(_mesh);
+    if (_texture_structure == nullptr)
+    {
+
+        _drawable.initialize_data_on_gpu(
+            _mesh, cgp::mesh_drawable::default_shader);
+    }
+    else
+    {
+        _drawable.initialize_data_on_gpu(
+            _mesh, cgp::mesh_drawable::default_shader, *_texture_structure);
+    }
 
     position = _mesh.position;
     normal = _mesh.normal;
