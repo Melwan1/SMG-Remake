@@ -26,3 +26,6 @@ camera:
     x: 0.0
     y: 0.0
     z: 0.0
+skybox:
+  texture_path: "galaxy-skybox.png"
+  distance_from_player: 50.0
