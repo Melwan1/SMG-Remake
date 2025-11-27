@@ -167,7 +167,7 @@ void simulation_step(std::vector<shape_deformable_structure> &deformables,
                 cgp::vec3 movement = PLAYER_CONTINUOUS_DISPLACEMENT;
                 float movement_amplitude = std::sqrt(
                     cgp::dot(movement, movement));
-                cgp::vec3 direction = cgp::cross(normal, normalize(movement));
+                cgp::vec3 direction = cgp::cross(normal, movement / movement_amplitude);
 
                 cgp::vec3 displacement = direction * movement_amplitude;
 
