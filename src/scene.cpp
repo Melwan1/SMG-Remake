@@ -1,40 +1,67 @@
 #include "scene.hpp"
 
-void scene_structure::initialize()
+void scene_structure::initialize(const fs::path &filename)
 {
-    YAML::Node scene_config = YAML::LoadFile("config/scenes/scene_01.yaml");
-    YAML::Node planet_config = scene_config["planets"];
-    initialize_camera(scene_config["camera"]);
-    global_frame.initialize_data_on_gpu(mesh_primitive_frame());
-
     // A sphere used to display the collision model
     sphere.initialize_data_on_gpu(
         mesh_primitive_sphere(1.0f, { 0, 0, 0 }, 10, 5));
 
+    // Initialize the black_hole texture
+    black_hole_opengl_image = std::make_unique<
+        opengl_texture_image_structure>();
+    black_hole_opengl_image->load_and_initialize_texture_2d_on_gpu(
+        black_hole_global_texture_path);
+    BlackHole::black_hole_global_texture = black_hole_opengl_image.get();
+
+    // Activate blending for transparency
+    glEnablei(GL_BLEND, 0);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    YAML::Node scene_config = YAML::LoadFile("config/scenes" / filename);
+    YAML::Node planet_config = scene_config["planets"];
+    YAML::Node black_hole_config = scene_config["black_holes"];
+    initialize_camera(scene_config["camera"]);
+    initialize_skybox(scene_config["skybox"]);
+    global_frame.initialize_data_on_gpu(mesh_primitive_frame());
+
     initialize_player(scene_config["player"]);
     initialize_planets(planet_config);
-
+    initialize_black_holes(black_hole_config);
 }
 
-void scene_structure::initialize_camera(const YAML::Node& camera_config)
+void scene_structure::initialize_skybox(const YAML::Node &skybox_config)
+{
+    skybox = std::move(std::make_unique<Skybox>(skybox_config));
+}
+
+void scene_structure::initialize_camera(const YAML::Node &camera_config)
 {
     camera_control.initialize(inputs,
                               window); // Give access to the inputs and window
-                                       // global state to the camera controler
+    // global state to the camera controller
     camera_control.set_rotation_axis_z();
     YAML::Node eye_config = camera_config["eye"];
-    const cgp::vec3 eye = { eye_config["x"].as<float>(), eye_config["y"].as<float>(), eye_config["z"].as<float>() };
+    const cgp::vec3 eye = { eye_config["x"].as<float>(),
+                            eye_config["y"].as<float>(),
+                            eye_config["z"].as<float>() };
     YAML::Node focus_config = camera_config["focus"];
-    const cgp::vec3 focus = { focus_config["x"].as<float>(), focus_config["y"].as<float>(), focus_config["z"].as<float>() };
+    const cgp::vec3 focus = { focus_config["x"].as<float>(),
+                              focus_config["y"].as<float>(),
+                              focus_config["z"].as<float>() };
     camera_control.look_at(eye, focus);
 }
 
 void scene_structure::initialize_player(const YAML::Node &player_config)
 {
     const YAML::Node player_position_config = player_config["position"];
-    const cgp::vec3 player_position = { player_position_config["x"].as<float>(), player_position_config["y"].as<float>(), player_position_config["z"].as<float>() };
+    const cgp::vec3 player_position = { player_position_config["x"].as<float>(),
+                                        player_position_config["y"].as<float>(),
+                                        player_position_config["z"].as<
+                                            float>() };
     const YAML::Node player_size_config = player_config["size"];
-    const cgp::vec3 player_size = { player_size_config["x"].as<float>(), player_size_config["y"].as<float>(), player_size_config["z"].as<float>() };
+    const cgp::vec3 player_size = { player_size_config["x"].as<float>(),
+                                    player_size_config["y"].as<float>(),
+                                    player_size_config["z"].as<float>() };
     shape_deformable_structure player;
     player.initialize(mesh_primitive_ellipsoid(player_size));
     player.set_position_and_velocity(player_position);
@@ -43,19 +70,57 @@ void scene_structure::initialize_player(const YAML::Node &player_config)
 
 void scene_structure::initialize_planets(const YAML::Node &planets_config)
 {
-    for (auto planet_id_iterator = planets_config.begin(); planet_id_iterator != planets_config.end(); planet_id_iterator++)
+    std::cout << "Loading " << planets_config.size() << " planets." << "\n";
+    for (auto planet_id_iterator = planets_config.begin(); planet_id_iterator !=
+         planets_config.end(); ++planet_id_iterator)
     {
         int planet_id = planet_id_iterator->as<int>();
         std::ostringstream filename;
-        filename << "config/planets/planet_" << std::setw(2) << std::setfill('0') << planet_id << ".yaml";
+        filename << "config/planets/planet_" << std::setw(2) <<
+            std::setfill('0') << planet_id << ".yaml";
         YAML::Node planet_config = YAML::LoadFile(filename.str());
 
         const YAML::Node planet_position_config = planet_config["position"];
-        const cgp::vec3 planet_position = { planet_position_config["x"].as<float>(), planet_position_config["y"].as<float>(), planet_position_config["z"].as<float>() };
+        const cgp::vec3 planet_position = {
+            planet_position_config["x"].as<float>(),
+            planet_position_config["y"].as<float>(),
+            planet_position_config["z"].as<float>() };
         const float planet_radius = planet_config["radius"].as<float>();
-        const float planet_attraction_radius = planet_config["attraction_radius"].as<float>();
+        const float planet_attraction_radius = planet_config[
+            "attraction_radius"].as<float>();
 
-        planets.emplace_back(planet_radius, planet_attraction_radius, planet_position);
+        planets.emplace_back(planet_radius, planet_attraction_radius,
+                             planet_position);
+        std::cout << "Loaded planet: " << planet_id << "\n";
+    }
+}
+
+void scene_structure::initialize_black_holes(
+    const YAML::Node &black_holes_config)
+{
+    for (auto black_hole_id_iterator = black_holes_config.begin();
+         black_hole_id_iterator != black_holes_config.end();
+         ++black_hole_id_iterator)
+    {
+        int black_hole_id = black_hole_id_iterator->as<int>();
+        std::ostringstream filename;
+        filename << "config/black_holes/black_hole_" << std::setw(2) <<
+            std::setfill('0') << black_hole_id << ".yaml";
+        YAML::Node black_hole_config = YAML::LoadFile(filename.str());
+
+        const YAML::Node black_hole_position_config = black_hole_config[
+            "position"];
+        const cgp::vec3 black_hole_position = {
+            black_hole_position_config["x"].as<float>(),
+            black_hole_position_config["y"].as<float>(),
+            black_hole_position_config["z"].as<float>() };
+        const float black_hole_radius = black_hole_config["radius"].as<float>();
+        const float black_hole_attraction_radius = black_hole_config[
+            "attraction_radius"].as<float>();
+
+        black_holes.emplace_back(black_hole_radius,
+                                 black_hole_attraction_radius,
+                                 black_hole_position);
     }
 }
 
@@ -63,6 +128,15 @@ void scene_structure::display_frame()
 {
     // Set the light to the current position of the camera
     environment.light = camera_control.camera_model.position();
+
+    skybox->update_mesh_from_camera(
+        camera_control.camera_model);
+    cgp::mesh_drawable drawable = skybox->update_drawable();
+    draw(drawable);
+    if (gui.display_wireframe)
+    {
+        draw_wireframe(drawable);
+    }
 
     if (gui.display_frame)
         draw(global_frame, environment);
@@ -72,14 +146,32 @@ void scene_structure::display_frame()
     // Compute the simulation
     if (param.time_step > 1e-6f)
     {
-        simulation_step(deformables, planets, param);
+        simulation_step(deformables, planets, black_holes, param,
+                        camera_control.camera_model);
+    }
+
+    // Delete the black-holed deformables
+    for (auto deformable = deformables.cbegin(); deformables.cend() !=
+         deformable;)
+    {
+        // TODO : not the actual timer in seconds...
+        if (deformable->got_black_holed != nullptr && deformable->dt_timer >=
+            param.black_hole_timer)
+        {
+            deformable = deformables.erase(deformable);
+        }
+        else
+        {
+            ++deformable;
+        }
     }
 
     for (int planet_index = 0; planet_index < planets.size(); planet_index++)
     {
         if (planets[planet_index].should_attract_deformable(deformables[0]))
         {
-            cgp::vec3 normal = normalize(deformables[0].com - planets[planet_index].get_center());
+            cgp::vec3 normal = normalize(
+                deformables[0].com - planets[planet_index].get_center());
             //camera_control.look_at(deformables[0].com + normal * 1.6 * planets[planet_index].get_radius(), deformables[0].com);
         }
     }
@@ -126,6 +218,23 @@ void scene_structure::display_frame()
             }
         }
     }
+
+    // display the black holes
+
+    for (int black_hole_index = 0; black_hole_index < black_holes.size();
+         black_hole_index++)
+    {
+        black_holes[black_hole_index].update_mesh_from_camera(
+            camera_control.camera_model);
+        cgp::mesh_drawable drawable = black_holes[black_hole_index].
+            update_drawable();
+        draw(drawable);
+        if (gui.display_wireframe)
+        {
+            draw_wireframe(drawable);
+        }
+    }
+
 }
 
 void scene_structure::display_gui()
@@ -163,6 +272,8 @@ void scene_structure::display_gui()
     ImGui::SliderFloat("Plasticity", &param.plasticity, 0, 1);
 
     ImGui::Spacing();
+    ImGui::SliderFloat("Black hole timer", &param.black_hole_timer, 0.0f,
+                      4.0f);
     ImGui::Spacing();
     ImGui::Spacing();
     ImGui::SliderFloat("Speed new shape", &gui.throwing_speed, 0.0f, 40.0f);
@@ -191,7 +302,7 @@ void scene_structure::throw_new_deformable_shape()
     // A lookup table for the color
     static std::vector<vec3> color_lut = { { 1, 0.5, 0.5 }, { 0.5, 1, 0.5 },
                                            { 0.5, 0.5, 1 }, { 1, 1, 0.5 },
-                                           { 1, 0.5, 1 },   { 0.5, 1, 1 } };
+                                           { 1, 0.5, 1 }, { 0.5, 1, 1 } };
     vec3 color = color_lut[int(rand_uniform(0, color_lut.size()))];
 
     // Create the new deformable shape
@@ -272,10 +383,12 @@ void scene_structure::mouse_move_event()
     if (!inputs.keyboard.shift)
         camera_control.action_mouse_move(environment.camera_view);
 }
+
 void scene_structure::mouse_click_event()
 {
     camera_control.action_mouse_click(environment.camera_view);
 }
+
 void scene_structure::keyboard_event()
 {
     camera_control.action_keyboard(environment.camera_view);
@@ -285,6 +398,7 @@ void scene_structure::keyboard_event()
         throw_new_deformable_shape();
     }
 }
+
 void scene_structure::idle_frame()
 {
     camera_control.idle_frame(environment.camera_view);

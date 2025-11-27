@@ -1,0 +1,7 @@
+id: 1
+position:
+  x: -5
+  y: 1
+  z: 1
+radius: 0.8
+attraction_radius: 2.0
