@@ -176,22 +176,6 @@ void scene_structure::display_frame()
         }
     }
 
-    // display the black holes
-
-    for (int black_hole_index = 0; black_hole_index < black_holes.size();
-         black_hole_index++)
-    {
-        black_holes[black_hole_index].update_mesh_from_camera(
-            camera_control.camera_model);
-        cgp::mesh_drawable drawable = black_holes[black_hole_index].
-            update_drawable();
-        draw(drawable);
-        if (gui.display_wireframe)
-        {
-            draw_wireframe(drawable);
-        }
-    }
-
     // Display all the deformable shapes
     for (int k = 0; k < deformables.size(); ++k)
     {
@@ -234,6 +218,23 @@ void scene_structure::display_frame()
             }
         }
     }
+
+    // display the black holes
+
+    for (int black_hole_index = 0; black_hole_index < black_holes.size();
+         black_hole_index++)
+    {
+        black_holes[black_hole_index].update_mesh_from_camera(
+            camera_control.camera_model);
+        cgp::mesh_drawable drawable = black_holes[black_hole_index].
+            update_drawable();
+        draw(drawable);
+        if (gui.display_wireframe)
+        {
+            draw_wireframe(drawable);
+        }
+    }
+
 }
 
 void scene_structure::display_gui()
