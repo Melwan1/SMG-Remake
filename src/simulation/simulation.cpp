@@ -54,9 +54,7 @@ void scene_structure::simulation_step()
     {
         // collision_with_walls(deformables);
         // std::cout << "player movement computed" << std::endl;
-        std::cout << "previous player position: " << average(player.position) << "\n";
         player_movement(player, planets, camera_ptr.get(), inputs);
-        std::cout << "next player position: " << average(player.position) << "\n";
 
         collision_between_particles(deformables, param);
         collision_with_planets(deformables, planets, param);
@@ -425,7 +423,6 @@ void planetary_attraction(std::vector<std::shared_ptr<shape_deformable_structure
         }
         // For all the deformable shapes
         shape_deformable_structure *deformable = deformables[kd].get();
-        std::cout << "previous deformable position: " << average(deformable->position) << "\n";
         const int N_vertex = deformable->position.size();
 
         auto combined_gravity = vec3(0.0, 0.0, 0.0);
