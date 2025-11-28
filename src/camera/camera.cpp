@@ -1,8 +1,7 @@
 #include "camera/camera.hpp"
 
 Camera::Camera(int id, CameraType camera_type)
-    : _id(id)
-    , _camera_type(camera_type)
+    : _id(id), _camera_type(camera_type)
 {}
 
 Camera::Camera(const YAML::Node &config, CameraType camera_type)

@@ -25,10 +25,12 @@ void scene_structure::initialize(const fs::path &filename)
     YAML::Node planet_config = scene_config["planets"];
     YAML::Node black_hole_config = scene_config["black_holes"];
     std::ostringstream camera_fileoss;
-    camera_fileoss << "camera_" << std::setw(2) << std::setfill('0') << scene_config["camera"].as<int>() << ".yaml";
+    camera_fileoss << "camera_" << std::setw(2) << std::setfill('0') <<
+        scene_config["camera"].as<int>() << ".yaml";
     const fs::path camera_filename = camera_fileoss.str();
     std::cout << "camera filename: " << camera_filename.c_str() << "\n";
-    const YAML::Node camera_config = YAML::LoadFile("config/camera" / camera_filename);
+    const YAML::Node camera_config = YAML::LoadFile(
+        "config/camera" / camera_filename);
     initialize_camera(camera_filename, camera_config);
     global_frame.initialize_data_on_gpu(mesh_primitive_frame());
 
@@ -37,21 +39,22 @@ void scene_structure::initialize(const fs::path &filename)
     initialize_black_holes(black_hole_config);
 }
 
-void scene_structure::initialize_camera(const fs::path &camera_path, const YAML::Node &camera_config)
+void scene_structure::initialize_camera(const fs::path &camera_path,
+                                        const YAML::Node &camera_config)
 {
     camera_control.initialize(inputs,
                               window); // Give access to the inputs and window
     // global state to the camera controller
     camera_control.set_rotation_axis_z();
-    YAML::Node eye_config = camera_config["eye"];
-    const cgp::vec3 eye = { eye_config["x"].as<float>(),
-                            eye_config["y"].as<float>(),
-                            eye_config["z"].as<float>() };
-    YAML::Node focus_config = camera_config["focus"];
-    const cgp::vec3 focus = { focus_config["x"].as<float>(),
-                              focus_config["y"].as<float>(),
-                              focus_config["z"].as<float>() };
-    camera_control.look_at(eye, focus);
+    // YAML::Node eye_config = camera_config["eye"];
+    // const cgp::vec3 eye = { eye_config["x"].as<float>(),
+    //                         eye_config["y"].as<float>(),
+    //                         eye_config["z"].as<float>() };
+    // YAML::Node focus_config = camera_config["focus"];
+    // const cgp::vec3 focus = { focus_config["x"].as<float>(),
+    //                           focus_config["y"].as<float>(),
+    //                           focus_config["z"].as<float>() };
+    // camera_control.look_at(eye, focus);
     CameraLoader loader(camera_path);
     camera_ptr = std::move(loader.load());
 }
@@ -67,14 +70,15 @@ void scene_structure::initialize_player(const YAML::Node &player_config)
     const cgp::vec3 player_size = { player_size_config["x"].as<float>(),
                                     player_size_config["y"].as<float>(),
                                     player_size_config["z"].as<float>() };
-    shape_deformable_structure player;
     player.initialize(mesh_primitive_ellipsoid(player_size));
     player.set_position_and_velocity(player_position);
     deformables.push_back(player);
 
     // attach camera to player if applicable
-    AttachedToPlayerCamera* attached_camera = dynamic_cast<AttachedToPlayerCamera*>(camera_ptr.get());
-    if (attached_camera) {
+    AttachedToPlayerCamera *attached_camera = dynamic_cast<
+        AttachedToPlayerCamera *>(camera_ptr.get());
+    if (attached_camera)
+    {
         attached_camera->attach_to_player(player);
     }
 }
@@ -148,8 +152,7 @@ void scene_structure::display_frame()
     // Compute the simulation
     if (param.time_step > 1e-6f)
     {
-        simulation_step(deformables, planets, black_holes, param,
-                        camera_control.camera_model);
+        simulation_step();
     }
 
     // Delete the black-holed deformables
@@ -174,7 +177,9 @@ void scene_structure::display_frame()
         {
             cgp::vec3 normal = normalize(
                 deformables[0].com - planets[planet_index].get_center());
-            //camera_control.look_at(deformables[0].com + normal * 1.6 * planets[planet_index].get_radius(), deformables[0].com);
+            camera_control.look_at(
+                deformables[0].com + normal * 1.6 * planets[planet_index].
+                get_radius(), deformables[0].com);
         }
     }
 
@@ -236,7 +241,6 @@ void scene_structure::display_frame()
             draw_wireframe(drawable);
         }
     }
-
 }
 
 void scene_structure::display_gui()
@@ -275,7 +279,7 @@ void scene_structure::display_gui()
 
     ImGui::Spacing();
     ImGui::SliderFloat("Black hole timer", &param.black_hole_timer, 0.0f,
-                      4.0f);
+                       4.0f);
     ImGui::Spacing();
     ImGui::Spacing();
     ImGui::SliderFloat("Speed new shape", &gui.throwing_speed, 0.0f, 40.0f);

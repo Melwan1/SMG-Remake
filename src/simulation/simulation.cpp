@@ -1,56 +1,14 @@
 #include "simulation.hpp"
 
-#include "../../third_party/eigen/Eigen/Core"
-#include "../../third_party/eigen/Eigen/SVD"
-#include "deformable/deformable.hpp"
-#include "objects/black_hole.hpp"
-#include "objects/planet.hpp"
+#include "scene.hpp"
 
-#define PLAYER_CONTINUOUS_DISPLACEMENT { 0.01, 0, 0 }
 
 using namespace cgp;
 
-// Compute the polar decomposition of the matrix M and return the rotation such
-// that
-//   M = R * S, where R is a rotation matrix and S is a positive semi-definite
-//   matrix
-mat3 polar_decomposition(mat3 const &M);
-
-void planetary_attraction(std::vector<shape_deformable_structure> &deformables,
-                          const std::vector<Planet> &planets,
-                          const std::vector<BlackHole> &black_holes,
-                          simulation_parameter const &param);
-
-// Compute the collision between the particles and the walls
-void collision_with_walls(std::vector<shape_deformable_structure> &deformables);
-
-// Compute the collision between the particles and the planets
-void collision_with_planets(
-    std::vector<shape_deformable_structure> &deformables,
-    const std::vector<Planet> &planets, simulation_parameter const &param);
-
-// Compute the collision between the particles and the black_holes
-void collision_with_black_holes(
-    std::vector<shape_deformable_structure> &deformables,
-    const std::vector<BlackHole> &black_holes,
-    simulation_parameter const &param);
-
-// Compute the collision between the particles to each other
-void collision_between_particles(
-    std::vector<shape_deformable_structure> &deformables,
-    simulation_parameter const &param);
-
-// Compute the shape matching on all the deformable shapes
-void shape_matching(std::vector<shape_deformable_structure> &deformables,
-                    simulation_parameter const &param);
 
 // Perform one simulation step (one numerical integration along the time step
 // dt) using PPD + Shape Matching
-void simulation_step(std::vector<shape_deformable_structure> &deformables,
-                     const std::vector<Planet> &planets,
-                     const std::vector<BlackHole> &black_holes,
-                     simulation_parameter const &param,
-                     const cgp::camera_orbit_euler &camera)
+void scene_structure::simulation_step()
 {
     float dt = param.time_step;
     int N_deformable = deformables.size();
@@ -94,6 +52,9 @@ void simulation_step(std::vector<shape_deformable_structure> &deformables,
          ++k_collision_steps)
     {
         // collision_with_walls(deformables);
+        // std::cout << "player movement computed" << std::endl;
+        player_movement(player, planets, camera_ptr.get(), inputs);
+
         collision_between_particles(deformables, param);
         collision_with_planets(deformables, planets, param);
         collision_with_black_holes(deformables, black_holes, param);
@@ -108,7 +69,8 @@ void simulation_step(std::vector<shape_deformable_structure> &deformables,
         const cgp::mat4 scaling_transform = mat4::build_identity().
                                             apply_translation(-deformable.com).
                                             apply_scaling(
-                                                1 - 2 * dt / param.black_hole_timer)
+                                                1 - 2 * dt / param.
+                                                black_hole_timer)
                                             .apply_translation(deformable.com);
 
         // Got black holed -> spiral animation
@@ -126,7 +88,9 @@ void simulation_step(std::vector<shape_deformable_structure> &deformables,
                 // Update velocity
                 deformable.velocity[k] =
                     cgp::cross(to_black_hole_vec,
-                               (camera.position() - deformable.position[k])) /
+                               (camera_control.camera_model.position()
+                                   -
+                                   deformable.position[k])) /
                     dt;
 
                 // Update the vertex position
@@ -150,32 +114,6 @@ void simulation_step(std::vector<shape_deformable_structure> &deformables,
 
                 // Update the vertex position
                 deformable.position[k] = deformable.position_predict[k];
-            }
-        }
-    }
-
-    // FIXME: try to move the player forward on the planet
-
-    for (const Planet &planet : planets)
-    {
-        for (shape_deformable_structure &deformable : deformables)
-        {
-            if (planet.should_attract_deformable(deformable))
-            {
-                cgp::vec3 normal = cgp::normalize(
-                    deformable.com - planet.get_center());
-                cgp::vec3 movement = PLAYER_CONTINUOUS_DISPLACEMENT;
-                float movement_amplitude = std::sqrt(
-                    cgp::dot(movement, movement));
-                cgp::vec3 direction = cgp::cross(normal, normalize(movement));
-
-                cgp::vec3 displacement = direction * movement_amplitude;
-
-                deformable.com += displacement * direction;
-                for (int k = 0; k < deformable.position.size(); k++)
-                {
-                    deformable.position[k] += displacement;
-                }
             }
         }
     }
@@ -486,7 +424,6 @@ void planetary_attraction(std::vector<shape_deformable_structure> &deformables,
         {
             continue;
         }
-
         // For all the deformable shapes
         shape_deformable_structure &deformable = deformables[kd];
         const int N_vertex = deformable.position.size();
@@ -536,6 +473,65 @@ void planetary_attraction(std::vector<shape_deformable_structure> &deformables,
             //   predicted position
             deformable.position_predict[k] =
                 deformable.position[k] + dt * deformable.velocity[k];
+        }
+    }
+}
+
+void player_movement(shape_deformable_structure &player,
+                     const std::vector<Planet> &planets,
+                     Camera *camera, input_devices &inputs)
+{
+    for (auto &planet : planets)
+    {
+        if (planet.should_attract_deformable(player))
+        {
+            const cgp::vec3 normal = cgp::normalize(
+                player.com - planet.get_center());
+
+            if (inputs.keyboard.up)
+                std::cout << std::boolalpha << "up\n";
+            if (inputs.keyboard.down)
+                std::cout << std::boolalpha << "down\n";
+            if (inputs.keyboard.left)
+                std::cout << std::boolalpha << "left\n";
+            if (inputs.keyboard.right)
+                std::cout << std::boolalpha << "right\n";
+
+            cgp::vec3 movement = cgp::vec3(0, 0, 0);
+            if (inputs.keyboard.up || inputs.keyboard.down)
+            {
+                const auto FORWARD_DIRECTION = cgp::vec3(1, 0, 0);
+                if (inputs.keyboard.down)
+                    movement = -1 * FORWARD_DIRECTION;
+                else
+                    movement = FORWARD_DIRECTION;
+            }
+            if (inputs.keyboard.left || inputs.keyboard.
+                                               right)
+            {
+                const auto SIDE_DIRECTION = cgp::vec3(0, 0, 1);
+                if (inputs.keyboard.left)
+                    movement = -1 * SIDE_DIRECTION;
+                else
+                    movement = SIDE_DIRECTION;
+            }
+            if (movement.x == 0 && movement.y == 0 && movement.z == 0)
+            {
+                break;
+            }
+
+            float movement_amplitude = cgp::norm(movement);
+            cgp::vec3 direction = cgp::cross(normal, normalize(movement));
+
+            cgp::vec3 displacement = direction * movement_amplitude;
+            std::cout << displacement << std::endl;
+            for (int k = 0; k < player.position.size(); k++)
+            {
+                player.position_predict[k] += displacement * 100;
+                player.velocity[k] += displacement;
+                std::cout << displacement << std::endl;
+            }
+            break;
         }
     }
 }

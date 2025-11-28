@@ -1,5 +1,11 @@
-#include "../deformable/deformable.hpp"
-#include "../objects/planet.hpp"
+#pragma once
+
+#include "../../third_party/eigen/Eigen/Core"
+#include "../../third_party/eigen/Eigen/SVD"
+#include "camera/camera.hpp"
+#include "deformable/deformable.hpp"
+#include "objects/black_hole.hpp"
+#include "objects/planet.hpp"
 
 struct simulation_parameter
 {
@@ -21,8 +27,42 @@ struct simulation_parameter
     float black_hole_timer = 1.0f;
 };
 
-void simulation_step(std::vector<shape_deformable_structure> &deformables,
-                     const std::vector<Planet> &planets,
-                     const std::vector<BlackHole> &black_holes,
-                     simulation_parameter const &param,
-                     const cgp::camera_orbit_euler &camera);
+
+// Compute the polar decomposition of the matrix M and return the rotation such
+// that
+//   M = R * S, where R is a rotation matrix and S is a positive semi-definite
+//   matrix
+cgp::mat3 polar_decomposition(cgp::mat3 const &M);
+
+void planetary_attraction(std::vector<shape_deformable_structure> &deformables,
+                          const std::vector<Planet> &planets,
+                          const std::vector<BlackHole> &black_holes,
+                          simulation_parameter const &param);
+
+// Compute the collision between the particles and the walls
+void collision_with_walls(std::vector<shape_deformable_structure> &deformables);
+
+// Compute the collision between the particles and the planets
+void collision_with_planets(
+    std::vector<shape_deformable_structure> &deformables,
+    const std::vector<Planet> &planets, simulation_parameter const &param);
+
+// Compute the collision between the particles and the black_holes
+void collision_with_black_holes(
+    std::vector<shape_deformable_structure> &deformables,
+    const std::vector<BlackHole> &black_holes,
+    simulation_parameter const &param);
+
+// Compute the collision between the particles to each other
+void collision_between_particles(
+    std::vector<shape_deformable_structure> &deformables,
+    simulation_parameter const &param);
+
+// Compute the shape matching on all the deformable shapes
+void shape_matching(std::vector<shape_deformable_structure> &deformables,
+                    simulation_parameter const &param);
+
+// Compute player movement
+void player_movement(shape_deformable_structure &player,
+                     const std::vector<Planet>& planets,
+                     Camera *camera, cgp::input_devices &inputs);

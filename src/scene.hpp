@@ -58,6 +58,7 @@ struct scene_structure : scene_inputs_generic
 
     simulation_parameter param;
     std::vector<shape_deformable_structure> deformables;
+    shape_deformable_structure player = shape_deformable_structure();
     std::vector<Planet> planets = std::vector<Planet>();
     std::vector<BlackHole> black_holes = std::vector<BlackHole>();
     std::unique_ptr<opengl_texture_image_structure> black_hole_opengl_image;
@@ -65,6 +66,7 @@ struct scene_structure : scene_inputs_generic
     void add_new_deformable_shape(vec3 const &center, vec3 const &velocity,
                                   vec3 const &angular_velocity,
                                   vec3 const &color);
+    void simulation_step();
 
     mesh_drawable sphere;
     mesh_drawable wall;

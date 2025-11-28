@@ -51,10 +51,8 @@ int Planet::get_sampling_vertical() const
 
 bool Planet::should_attract_deformable(const shape_deformable_structure &deformable) const
 {
-    cgp::vec3 deformable_to_planet = get_center() - deformable.com;
-    float squared_length = cgp::dot(deformable_to_planet, deformable_to_planet);
-    float attraction_radius = get_attraction_radius();
-    return squared_length <= attraction_radius * attraction_radius;
+    const cgp::vec3 deformable_to_planet = get_center() - deformable.com;
+    return cgp::norm(deformable_to_planet) <= get_attraction_radius();
 }
 
 shape_deformable_structure &Planet::get_shape()
