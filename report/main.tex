@@ -166,6 +166,39 @@ Il existe deux types de caméra dans le projet :
 
 \end{itemize}
 
+\section{Configuration globale de la scène}
+
+La scène est parsée depuis des fichiers YAML selon cette architecture :
+
+\begin{minted}{bash}
+config
+|-- black_holes
+|   `-- black_hole_01.yaml
+|-- camera
+|   |-- camera_01.yaml
+|   |-- camera_02.yaml
+|   `-- camera_03.yaml
+|-- planets
+|   |-- planet_01.yaml
+|   `-- planet_02.yaml
+`-- scenes
+    |-- scene_01.yaml
+    `-- scene_02.yaml
+\end{minted}
+
+Le fichier principal est celui de la scène (par exemple, \mintinline{text}{scenes/scene_02.yaml}), il importe les fichiers de configuration pour les planètes et pour les trous noirs en utilisant leur identifiant. Par exemple, ces lignes :
+\begin{minted}{yaml}
+planets:
+    - 1
+    - 2
+\end{minted}
+
+dans le fichier de scène importe les planètes ayant pour identifiants 1 et 2 dans la scène. Ces planètes ont leur configuration dans les fichiers \mintinline{text}{planet_01.yaml} et \mintinline{text}{planet_02.yaml}.
+
+Les valeurs inscrites dans les fichiers \mintinline{text}{.yaml} peuvent être modifiées par l'utilisateur au runtime, ce qui évite une nouvelle compilation.
+
+L'identifiant de la scène à charger peut être modifié via le premier argument du binaire (seulement dans le binaire \mintinline{text}{camera_movement}).
+
 \section{Conclusion}
 
 Bien que la partie artistique ne soit pas la même que dans le vrai jeu, la nouvelle mécanique d'attraction gravitationnelle qui distingue ce jeu des autres jeux de platformer 2D/3D a bien été implémentée, et le rendu nous semble satisfaisant.
