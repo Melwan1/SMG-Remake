@@ -313,6 +313,12 @@ void keyboard_callback(GLFWwindow *window, int key, int scancode, int action,
             std::cout << "  View matrix:" << std::endl;
             std::cout << str_pretty(camera_model.matrix_view()) << std::endl;
         }
+
+        if (key == GLFW_KEY_K && action == GLFW_PRESS)
+        {
+            scene.deformables.clear();
+            std::cout << "Cleared deformables." << std::endl;
+        }
     }
 }
 

@@ -11,12 +11,12 @@ Planet::Planet(float radius, float attraction_radius, cgp::vec3 center,
     , _sampling_vertical(sampling_vertical)
 {
     _mesh.centered();
-    const cgp::vec3 blue_color({ 0.4, 0.6, 1.0 });
-    _mesh.color.fill(blue_color);
     _shape.initialize(_mesh);
     const cgp::vec3 velocity({ 0.0, 0.0, 0.0 });
     const cgp::vec3 angular_velocity({ 0.0, 0.0, 0.0 });
     _shape.set_position_and_velocity(center, velocity, angular_velocity);
+        _shape.drawable.texture.load_and_initialize_texture_2d_on_gpu(
+            "assets/textures/earth-texture.png");
 }
 
 const cgp::mesh &Planet::get_mesh() const

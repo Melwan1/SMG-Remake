@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <memory>
 
 #include <yaml-cpp/yaml.h>
 
@@ -10,6 +11,7 @@
 #include "objects/planet.hpp"
 #include "simulation/simulation.hpp"
 #include "camera/camera.hpp"
+#include "skybox/skybox.hpp"
 
 using cgp::mesh_drawable;
 
@@ -57,6 +59,7 @@ struct scene_structure : scene_inputs_generic
     cgp::timer_basic timer;
 
     simulation_parameter param;
+    std::unique_ptr<Skybox>  skybox = nullptr;
     std::vector<std::shared_ptr<shape_deformable_structure>> deformables;
     shape_deformable_structure player = shape_deformable_structure();
     std::vector<Planet> planets = std::vector<Planet>();
@@ -76,7 +79,8 @@ struct scene_structure : scene_inputs_generic
     // Functions
     // ****************************** //
 
-    void initialize_camera(const fs::path &camera_path, const YAML::Node& camera_config);
+    void initialize_skybox(const YAML::Node &skybox_config);
+    void initialize_camera(const fs::path &camera_path, const YAML::Node &camera_config);
     void initialize_player(const YAML::Node &player_config);
     void initialize_planets(const YAML::Node &planets_config);
     void initialize_black_holes(const YAML::Node &black_holes_config);

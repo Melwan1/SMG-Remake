@@ -32,11 +32,17 @@ void scene_structure::initialize(const fs::path &filename)
     const YAML::Node camera_config = YAML::LoadFile(
         "config/camera" / camera_filename);
     initialize_camera(camera_filename, camera_config);
+    initialize_skybox(scene_config["skybox"]);
     global_frame.initialize_data_on_gpu(mesh_primitive_frame());
 
     initialize_player(scene_config["player"]);
     initialize_planets(planet_config);
     initialize_black_holes(black_hole_config);
+}
+
+void scene_structure::initialize_skybox(const YAML::Node &skybox_config)
+{
+    skybox = std::move(std::make_unique<Skybox>(skybox_config));
 }
 
 void scene_structure::initialize_camera(const fs::path &camera_path,
@@ -143,6 +149,15 @@ void scene_structure::display_frame()
 {
     // Set the light to the current position of the camera
     environment.light = camera_control.camera_model.position();
+
+    skybox->update_mesh_from_camera(
+        camera_control.camera_model);
+    cgp::mesh_drawable drawable = skybox->update_drawable();
+    draw(drawable);
+    if (gui.display_wireframe)
+    {
+        draw_wireframe(drawable);
+    }
 
     if (gui.display_frame)
         draw(global_frame, environment);

@@ -12,3 +12,6 @@ player:
     y: 0.07
     z: 0.2
 camera: 3
+skybox:
+  path: "galaxy-skybox.png"
+  distance_from_player: 50.0
