@@ -57,7 +57,7 @@ struct scene_structure : scene_inputs_generic
     cgp::timer_basic timer;
 
     simulation_parameter param;
-    std::vector<shape_deformable_structure> deformables;
+    std::vector<shape_deformable_structure*> deformables;
     shape_deformable_structure player = shape_deformable_structure();
     std::vector<Planet> planets = std::vector<Planet>();
     std::vector<BlackHole> black_holes = std::vector<BlackHole>();

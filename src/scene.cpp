@@ -72,7 +72,7 @@ void scene_structure::initialize_player(const YAML::Node &player_config)
                                     player_size_config["z"].as<float>() };
     player.initialize(mesh_primitive_ellipsoid(player_size));
     player.set_position_and_velocity(player_position);
-    deformables.push_back(player);
+    deformables.emplace_back(&player);
 
     // attach camera to player if applicable
     AttachedToPlayerCamera *attached_camera = dynamic_cast<
@@ -160,7 +160,7 @@ void scene_structure::display_frame()
          deformable;)
     {
         // TODO : not the actual timer in seconds...
-        if (deformable->got_black_holed != nullptr && deformable->dt_timer >=
+        if ((*deformable)->got_black_holed != nullptr && (*deformable)->dt_timer >=
             param.black_hole_timer)
         {
             deformable = deformables.erase(deformable);
@@ -173,24 +173,24 @@ void scene_structure::display_frame()
 
     for (int planet_index = 0; planet_index < planets.size(); planet_index++)
     {
-        if (planets[planet_index].should_attract_deformable(deformables[0]))
+        if (planets[planet_index].should_attract_deformable(player))
         {
             cgp::vec3 normal = normalize(
-                deformables[0].com - planets[planet_index].get_center());
+                player.com - planets[planet_index].get_center());
             camera_control.look_at(
-                deformables[0].com + normal * 1.6 * planets[planet_index].
-                get_radius(), deformables[0].com);
+                player.com + normal * 1.6 * planets[planet_index].
+                get_radius(), player.com);
         }
     }
 
     // Display all the deformable shapes
     for (int k = 0; k < deformables.size(); ++k)
     {
-        deformables[k].update_drawable();
-        draw(deformables[k].drawable);
+        deformables[k]->update_drawable();
+        draw(deformables[k]->drawable);
         if (gui.display_wireframe)
         {
-            draw_wireframe(deformables[k].drawable);
+            draw_wireframe(deformables[k]->drawable);
         }
     }
 
@@ -218,9 +218,9 @@ void scene_structure::display_frame()
         for (int k = 0; k < deformables.size(); ++k)
         {
             sphere.model.scaling = param.collision_radius;
-            for (int kv = 0; kv < deformables[k].position.size(); ++kv)
+            for (int kv = 0; kv < deformables[k]->position.size(); ++kv)
             {
-                sphere.model.translation = deformables[k].position[kv];
+                sphere.model.translation = deformables[k]->position[kv];
                 draw(sphere, environment);
             }
         }
@@ -381,7 +381,7 @@ void scene_structure::add_new_deformable_shape(vec3 const &center,
     }
 
     // Add the new deformable structure
-    deformables.push_back(deformable);
+    deformables.emplace_back(&deformable);
 }
 
 void scene_structure::mouse_move_event()

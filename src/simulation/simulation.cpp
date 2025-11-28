@@ -14,9 +14,9 @@ void scene_structure::simulation_step()
     int N_deformable = deformables.size();
 
     // Calculate the center of mass first for later use
-    for (shape_deformable_structure &deformable : deformables)
+    for (shape_deformable_structure *deformable : deformables)
     {
-        deformable.com = average(deformable.position);
+        deformable->com = average(deformable->position);
     }
 
     // I. - Apply the external forces to the velocity
@@ -53,7 +53,9 @@ void scene_structure::simulation_step()
     {
         // collision_with_walls(deformables);
         // std::cout << "player movement computed" << std::endl;
+        std::cout << "previous player position: " << average(player.position) << "\n";
         player_movement(player, planets, camera_ptr.get(), inputs);
+        std::cout << "next player position: " << average(player.position) << "\n";
 
         collision_between_particles(deformables, param);
         collision_with_planets(deformables, planets, param);
@@ -64,63 +66,58 @@ void scene_structure::simulation_step()
     // III. Final velocity update
     for (int kd = 0; kd < N_deformable; ++kd)
     {
-        shape_deformable_structure &deformable = deformables[kd];
+        shape_deformable_structure *deformable = deformables[kd];
 
         const cgp::mat4 scaling_transform = mat4::build_identity().
-                                            apply_translation(-deformable.com).
+                                            apply_translation(-deformable->com).
                                             apply_scaling(
                                                 1 - 2 * dt / param.
                                                 black_hole_timer)
-                                            .apply_translation(deformable.com);
+                                            .apply_translation(deformable->com);
 
         // Got black holed -> spiral animation
-        if (deformable.got_black_holed != nullptr)
+        if (deformable->got_black_holed != nullptr)
         {
-            const BlackHole *black_hole = deformable.got_black_holed;
-            const vec3 to_black_hole_vec = black_hole->get_center() - deformable
-                .com;
+            const BlackHole *black_hole = deformable->got_black_holed;
+            const vec3 to_black_hole_vec = black_hole->get_center() - deformable->com;
 
-            for (int k = 0; k < deformable.size(); ++k)
+            for (int k = 0; k < deformable->size(); ++k)
             {
-                deformable.position[k] = (scaling_transform * vec4(
-                    deformable.position[k], 1.0)).xyz();
+                deformable->position[k] = (scaling_transform * vec4(
+                    deformable->position[k], 1.0)).xyz();
 
                 // Update velocity
-                deformable.velocity[k] =
+                deformable->velocity[k] =
                     cgp::cross(to_black_hole_vec,
-                               (camera_control.camera_model.position()
-                                   -
-                                   deformable.position[k])) /
+                               (camera_control.camera_model.position() - deformable->position[k])) /
                     dt;
 
                 // Update the vertex position
-                deformable.position[k] += 0.015 *
-                    cgp::normalize(deformable.
-                        velocity[k]) +
-                    to_black_hole_vec * 0.02;
+                deformable->position[k] += 0.015 *
+                    cgp::normalize(deformable->velocity[k]) + to_black_hole_vec * 0.02;
             }
 
-            deformable.dt_timer += dt;
+            deformable->dt_timer += dt;
         }
         else
         {
             // Normal update of the velocity
-            for (int k = 0; k < deformable.size(); ++k)
+            for (int k = 0; k < deformable->size(); ++k)
             {
                 // Update velocity
-                deformable.velocity[k] =
-                    (deformable.position_predict[k] - deformable.position[k]) /
+                deformable->velocity[k] =
+                    (deformable->position_predict[k] - deformable->position[k]) /
                     dt;
 
                 // Update the vertex position
-                deformable.position[k] = deformable.position_predict[k];
+                deformable->position[k] = deformable->position_predict[k];
             }
         }
     }
 }
 
 // Compute the shape matching on all the deformable shapes
-void shape_matching(std::vector<shape_deformable_structure> &deformables,
+void shape_matching(std::vector<shape_deformable_structure*> &deformables,
                     simulation_parameter const &param)
 {
     // Arguments:
@@ -160,37 +157,37 @@ void shape_matching(std::vector<shape_deformable_structure> &deformables,
     //  product. It can be computed using the syntax "mat3 M =
     //  tensor_product(a,b)"
     //
-    for (shape_deformable_structure &deformable : deformables)
+    for (shape_deformable_structure *deformable : deformables)
     {
-        if (deformable.got_black_holed != nullptr)
+        if (deformable->got_black_holed != nullptr)
         {
             continue;
         }
 
-        deformable.com = average(deformable.position_predict);
-        deformable.com_reference = average(deformable.position);
+        deformable->com = average(deformable->position_predict);
+        deformable->com_reference = average(deformable->position);
         mat3 T = mat3::build_zero();
-        for (int i = 0; i < deformable.position_predict.size(); i++)
+        for (int i = 0; i < deformable->position_predict.size(); i++)
         {
-            T += tensor_product(deformable.position_predict[i] - deformable.com,
-                                deformable.position[i]
-                                - deformable.com_reference);
+            T += tensor_product(deformable->position_predict[i] - deformable->com,
+                                deformable->position[i]
+                                - deformable->com_reference);
         }
         mat3 R = polar_decomposition(T);
-        for (int i = 0; i < deformable.position_predict.size(); i++)
+        for (int i = 0; i < deformable->position_predict.size(); i++)
         {
             auto new_pred =
-                R * (deformable.position[i] - deformable.com_reference)
-                + deformable.com;
-            deformable.position_predict[i] =
-                param.elasticity * deformable.position_predict[i]
+                R * (deformable->position[i] - deformable->com_reference)
+                + deformable->com;
+            deformable->position_predict[i] =
+                param.elasticity * deformable->position_predict[i]
                 + (1 - param.elasticity) * new_pred;
         }
     }
 }
 
 void collision_between_particles(
-    std::vector<shape_deformable_structure> &deformables,
+    std::vector<shape_deformable_structure*> &deformables,
     simulation_parameter const &param)
 {
     float r = param.collision_radius; // radius of colliding sphere
@@ -201,7 +198,7 @@ void collision_between_particles(
     for (int kd = 0; kd < N_deformable; ++kd)
     {
         bounding_box b;
-        b.initialize(deformables[kd].position_predict);
+        b.initialize(deformables[kd]->position_predict);
         b.extends(r);
         bbox.push_back(b);
     }
@@ -230,9 +227,9 @@ void collision_between_particles(
             if (bounding_box::collide(bbox[i], bbox[j]))
             {
                 // objects MAY collide
-                for (auto &p_left : left_deformable.position_predict)
+                for (auto &p_left : left_deformable->position_predict)
                 {
-                    for (auto &p_right : right_deformable.position_predict)
+                    for (auto &p_right : right_deformable->position_predict)
                     {
                         auto n = norm(p_left - p_right);
                         if (n < 2 * r)
@@ -250,7 +247,7 @@ void collision_between_particles(
 }
 
 void collision_with_planets(
-    std::vector<shape_deformable_structure> &deformables,
+    std::vector<shape_deformable_structure*> &deformables,
     const std::vector<Planet> &planets, simulation_parameter const &param)
 {
     const float r = param.collision_radius; // radius of colliding sphere
@@ -261,7 +258,7 @@ void collision_with_planets(
     for (int kd = 0; kd < N_deformable; ++kd)
     {
         bounding_box b;
-        b.initialize(deformables[kd].position_predict);
+        b.initialize(deformables[kd]->position_predict);
         b.extends(r);
         bbox.push_back(b);
     }
@@ -292,7 +289,7 @@ void collision_with_planets(
             if (bounding_box::collide(bbox[i], planet_bbox[j]))
             {
                 // objects MAY collide
-                for (auto &deformable_position : deformable.position_predict)
+                for (auto &deformable_position : deformable->position_predict)
                 {
                     vec3 to_planet = planet_center - deformable_position;
                     auto n = norm(to_planet);
@@ -309,7 +306,7 @@ void collision_with_planets(
 
 
 void collision_with_black_holes(
-    std::vector<shape_deformable_structure> &deformables,
+    std::vector<shape_deformable_structure*> &deformables,
     const std::vector<BlackHole> &black_holes,
     simulation_parameter const &param)
 {
@@ -321,7 +318,7 @@ void collision_with_black_holes(
     for (int kd = 0; kd < N_deformable; ++kd)
     {
         bounding_box b;
-        b.initialize(deformables[kd].position_predict);
+        b.initialize(deformables[kd]->position_predict);
         b.extends(r);
         bbox.push_back(b);
     }
@@ -340,7 +337,7 @@ void collision_with_black_holes(
 
     for (int i = 0; i < N_deformable; i++)
     {
-        if (deformables[i].got_black_holed != nullptr)
+        if (deformables[i]->got_black_holed != nullptr)
         {
             continue;
         }
@@ -355,14 +352,14 @@ void collision_with_black_holes(
             if (bounding_box::collide(bbox[i], black_hole_bbox[j]))
             {
                 // objects MAY collide
-                for (auto &deformable_position : deformable.position_predict)
+                for (auto &deformable_position : deformable->position_predict)
                 {
                     vec3 to_black_hole = black_hole_center -
                         deformable_position;
                     auto n = norm(to_black_hole);
                     if (n < r + black_hole_r)
                     {
-                        deformable.got_black_holed = &black_hole;
+                        deformable->got_black_holed = &black_hole;
                     }
                 }
             }
@@ -372,16 +369,16 @@ void collision_with_black_holes(
 
 // Compute the collision between the particles and the walls
 // Note: This function is already pre-coded
-void collision_with_walls(std::vector<shape_deformable_structure> &deformables)
+void collision_with_walls(std::vector<shape_deformable_structure*> &deformables)
 {
     int N_deformable = deformables.size();
     for (int kd = 0; kd < N_deformable; ++kd)
     {
-        shape_deformable_structure &deformable = deformables[kd];
-        int N_vertex = deformable.size();
+        shape_deformable_structure *deformable = deformables[kd];
+        int N_vertex = deformable->size();
         for (int k = 0; k < N_vertex; ++k)
         {
-            vec3 &p = deformable.position_predict[k];
+            vec3 &p = deformable->position_predict[k];
 
             // Standard collision with the walls in x and y.
             //  Modify these values for different parameters
@@ -399,15 +396,15 @@ void collision_with_walls(std::vector<shape_deformable_structure> &deformables)
             {
                 p.z = 0;
                 // model friction with the ground
-                p.x = deformable.position[k].x;
-                p.y = deformable.position[k].y;
+                p.x = deformable->position[k].x;
+                p.y = deformable->position[k].y;
             }
         }
     }
 }
 
 // Compute the attraction of the planet
-void planetary_attraction(std::vector<shape_deformable_structure> &deformables,
+void planetary_attraction(std::vector<shape_deformable_structure*> &deformables,
                           const std::vector<Planet> &planets,
                           const std::vector<BlackHole> &black_holes,
                           simulation_parameter const &param)
@@ -420,18 +417,19 @@ void planetary_attraction(std::vector<shape_deformable_structure> &deformables,
 
     for (int kd = 0; kd < N_deformable; ++kd)
     {
-        if (deformables[kd].got_black_holed != nullptr)
+        if (deformables[kd]->got_black_holed != nullptr)
         {
             continue;
         }
         // For all the deformable shapes
-        shape_deformable_structure &deformable = deformables[kd];
-        const int N_vertex = deformable.position.size();
+        shape_deformable_structure *deformable = deformables[kd];
+        std::cout << "previous deformable position: " << average(deformable->position) << "\n";
+        const int N_vertex = deformable->position.size();
 
         auto combined_gravity = vec3(0.0, 0.0, 0.0);
         for (const auto &planet : planets)
         {
-            vec3 planet_vector = planet.get_center() - deformable.com;
+            vec3 planet_vector = planet.get_center() - deformable->com;
             const float n = norm(planet_vector);
             const auto attraction_radius = planet.get_attraction_radius();
 
@@ -447,7 +445,7 @@ void planetary_attraction(std::vector<shape_deformable_structure> &deformables,
 
         for (const auto &black_hole : black_holes)
         {
-            vec3 black_hole_vector = black_hole.get_center() - deformable.com;
+            vec3 black_hole_vector = black_hole.get_center() - deformable->com;
             const float n = norm(black_hole_vector);
             const auto attraction_radius = black_hole.get_attraction_radius();
 
@@ -467,12 +465,12 @@ void planetary_attraction(std::vector<shape_deformable_structure> &deformables,
 
             // Standard integration of external forces
             //   drag + gravity
-            deformable.velocity[k] =
-                deformable.velocity[k] * (1 - dt * param.friction)
+            deformable->velocity[k] =
+                deformable->velocity[k] * (1 - dt * param.friction)
                 + dt * combined_gravity;
             //   predicted position
-            deformable.position_predict[k] =
-                deformable.position[k] + dt * deformable.velocity[k];
+            deformable->position_predict[k] =
+                deformable->position[k] + dt * deformable->velocity[k];
         }
     }
 }
@@ -524,12 +522,10 @@ void player_movement(shape_deformable_structure &player,
             cgp::vec3 direction = cgp::cross(normal, normalize(movement));
 
             cgp::vec3 displacement = direction * movement_amplitude;
-            std::cout << displacement << std::endl;
             for (int k = 0; k < player.position.size(); k++)
             {
-                player.position_predict[k] += displacement * 100;
-                player.velocity[k] += displacement;
-                std::cout << displacement << std::endl;
+                player.position[k] += displacement * 5e-5;
+                //player.velocity[k] += displacement;
             }
             break;
         }
