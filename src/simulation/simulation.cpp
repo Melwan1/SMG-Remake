@@ -158,24 +158,21 @@ void simulation_step(std::vector<shape_deformable_structure> &deformables,
 
     for (const Planet &planet : planets)
     {
-        for (shape_deformable_structure &deformable : deformables)
+        if (planet.should_attract_deformable(deformables[0]))
         {
-            if (planet.should_attract_deformable(deformable))
+            cgp::vec3 normal = cgp::normalize(
+                deformables[0].com - planet.get_center());
+            cgp::vec3 movement = PLAYER_CONTINUOUS_DISPLACEMENT;
+            float movement_amplitude = std::sqrt(
+                cgp::dot(movement, movement));
+            cgp::vec3 direction = cgp::cross(normal, movement / movement_amplitude);
+
+            cgp::vec3 displacement = direction * movement_amplitude;
+
+            deformables[0].com += displacement * direction;
+            for (int k = 0; k < deformables[0].position.size(); k++)
             {
-                cgp::vec3 normal = cgp::normalize(
-                    deformable.com - planet.get_center());
-                cgp::vec3 movement = PLAYER_CONTINUOUS_DISPLACEMENT;
-                float movement_amplitude = std::sqrt(
-                    cgp::dot(movement, movement));
-                cgp::vec3 direction = cgp::cross(normal, movement / movement_amplitude);
-
-                cgp::vec3 displacement = direction * movement_amplitude;
-
-                deformable.com += displacement * direction;
-                for (int k = 0; k < deformable.position.size(); k++)
-                {
-                    deformable.position[k] += displacement;
-                }
+                deformables[0].position[k] += displacement;
             }
         }
     }
@@ -503,7 +500,7 @@ void planetary_attraction(std::vector<shape_deformable_structure> &deformables,
                 constexpr float random_mass_factor = 25;
                 // In reality, it's : G * m1 * m2 / (n * n)
                 combined_gravity =
-                    random_mass_factor * normalize(planet_vector);
+                    random_mass_factor * normalize(planet_vector) / (n * n);
                 break;
             }
         }

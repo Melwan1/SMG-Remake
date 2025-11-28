@@ -1,0 +1,173 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage[cachedir=.]{minted}
+\usepackage{lmodern}
+
+\usepackage{booktabs}
+
+\usepackage{pgfplots}
+\usepgfplotslibrary{dateplot}
+
+\usepackage{xspace}
+\usepackage{minted}
+
+\usepackage[a4paper, margin=3cm]{geometry}
+\usepackage{hyperref}
+\usepackage{amstext}
+\usepackage{subcaption}
+
+\title{ANIM3D - Super Mario Galaxy Remake}
+\author{Maxime Legros - Melwan Chevassus}
+\date{28 Novembre 2025}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+L'idée du projet est de recoder une version minimale du jeu \textit{Super Mario Galaxy}, sorti pour la première fois sur \textit{Wii} en 2007. Le projet est donc composé d'une scène 3D sur laquelle apparaissent notamment des planètes, un joueur et des trous noirs, tout ceci dans l'espace.
+
+Nous sommes repartis du TP 4 - \textbf{Shape matching} afin de pouvoir modifier l'attraction des objets.
+
+\section{Instructions de build}
+
+La soumission sur Moodle vient avec deux binaires préconstruits (ils doivent être lancés sur une architecture Linux x86 64 bits). Ces deux binaires sont deux versions du projet qui sont encore incompatibles entre elles :
+
+\begin{itemize}
+    \item la version \mintinline{text}{camera_movement} fixe la caméra à proximité du joueur,
+    \item la version \mintinline{text}{black_hole} laisse la caméra flottante dans la scène (ce qui permet notamment de jeter des objets dans un trou noir facilement).
+\end{itemize}
+
+Le build par défaut, exécuté avec la commande
+\mint{bash}{cmake -B build && cmake --build build}
+donne la version \mintinline{text}{camera_movement}.
+
+\section{Gravité et animation}
+
+\subsection{Planètes}
+
+\subsubsection{Affichage}
+
+Le premier élément à intégrer au projet est la gravité par planète. Chaque planète possède un rayon (qui est le rayon du mesh sphérique), et un rayon d'attraction plus grand que le rayon de la planète.
+
+La texture des planètes est un planisphère de la terre, le même utilisé sur toutes les planètes et est tirée de \href{https://www.solarsystemscope.com/textures/}{ce site}.
+
+L'affichage de la planète ressemble à ceci :
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{.47\textwidth}
+        \includegraphics[width=.90\textwidth]{./planet_no_wireframe.png}
+        \caption{Planet texture, no wireframe}
+    \end{subfigure}
+    \begin{subfigure}{.47\textwidth}
+        \includegraphics[width=.90\textwidth]{./planet_with_wireframe.png}
+        \caption{Planet texture, with wireframe}
+    \end{subfigure}
+\end{figure}
+
+L'affichage des planètes est géré dans la fonction \mintinline{text}{display_frame} de la scène.
+
+\subsubsection{Calcul de la gravité}
+
+Tous les objets qui sont à l'intérieur du rayon d'attraction d'une planète sont attirés dans la direction de cette planète. Pour éviter des conflits de gravité, on suppose que les planètes sont \textbf{toujours suffisamment éloignées} pour qu'un objet soit attiré par une planète au maximum.
+
+La formule de gravité, telle qu'on la connaît dans la physique, est
+
+$$\vec F = G \frac{m_1 m_2}{d^2} \vec u$$
+
+où $G$ est la constante de gravitation, $m_1$ la masse de la planète, $m_2$ la masse de l'objet, $d$ la distance entre les deux centres de gravité et $\vec u$ le vecteur unitaire dirigé de l'objet vers la planète. Par souci de simplification, la gravité est implémentée avec la formule
+
+$$\vec F = \frac{c}{d^2} \vec u$$ où $c$ est une constante numérique.
+
+La gravité des planètes est calculée dans la fonction \mintinline{text}{planet_attraction} du fichier \mintinline{text}{simulation.cpp}.
+
+\subsection{Trous noirs}
+
+\subsubsection{Affichage}
+
+Comme dans le vrai jeu, les trous noirs sont affichés comme un \textbf{billboard} en deux dimensions : la texture est simplifiée et est toujours face au joueur. Le billboard de trou noir subit donc une rotation en fonction de la position de la caméra par rapport au trou noir. Ainsi, le trou noir est affiché en utilisant un \mintinline{text}{mesh_primitive_quadrangle}.
+
+La texture du trou noir, tirée du site \href{https://www.mariowiki.com/Black_hole}{Mario Wiki} est en partie transparente, les trous noirs sont donc dessinés en dernier à l'intérieur de la fonction \mintinline{cpp}{display_frame}.
+
+Voici un exemple d'affichage lorsqu'un trou noir :
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.2]{black_hole_display.png}
+    \caption{Black Hole display (with wireframes)}
+\end{figure}
+
+La gravité des trous noirs est calculée dans la fonction \mintinline{text}{simulation_step} du fichier \mintinline{text}{simulation.cpp}.
+
+\subsubsection{Calcul de la gravité}
+
+Le calcul de la gravité du trou noir est sensiblement le même que celui pour les planètes, seulement la constante $c$ est plus élevée ici.
+
+Lorsqu'un objet est emprisonné dans le rayon d'attraction d'un trou noir, il lui est impossible d'en sortir. L'animation du trou noir (à durée réglable) se termine par la suppression du déformable.
+
+Nous avons tenté de reproduire l'animation du jeu pour les trous noirs avec une trajectoire en spirale dirigée vers le trou noir via les formules :
+
+\begin{itemize}
+    \item Calcul de la nouvelle taille de l'objet aspiré : pour chaque sommet $k$ de l'objet,
+
+        $$\text{obj}_{\text{pos}_k} = T(\text{obj}_{\text{com}}) S(1 - 2 * \text{dt}) T(-\text{obj}_{\text{com}}).$$
+
+        où $T(x)$ est la matrice de translation du vecteur $x$, $S(t)$ est la matrice de scale de paramètre $t > 0$ et $\text{dt}$ est la durée de la frame.
+
+    \item Calcul de la nouvelle vitesse de l'objet aspiré : pour chaque sommet $k$ de l'objet,
+
+        $$\text{obj}_{\text{vit}_k} = (\text{hole}_{\text{pos}} - \text{obj}_{\text{com}}) \times (\text{cam}_{\text{pos}} - \text{obj}_{\text{pos}_k}) / \text{dt}.$$
+
+    \item Calcul de la nouvelle position de l'objet aspiré : pour chaque sommet $k$ de l'objet,
+        $$\text{obj}_{\text{pos}_k} = c_1 \text{normalize}(\text{obj}_{\text{vit}_k}) + c_2 (\text{hole}_{\text{pos}} - \text{obj}_{\text{com}}).$$
+
+    \item Lorsque l'animation a duré suffisamment longtemps (en général après 4 ou 5 tours de spirale), l'objet disparaît de la scène.
+\end{itemize}
+
+\subsection{Spaghettification}
+
+Le calcul d'attraction du trou noir permet l'affichage d'un effet de \textbf{spaghettification} (déformation plastique) :
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{.32\textwidth}
+        \includegraphics[width=.95\textwidth]{./spaghetti_1.png}
+    \end{subfigure}
+    \begin{subfigure}{.32\textwidth}
+        \includegraphics[width=.95\textwidth]{./spaghetti_2.png}
+    \end{subfigure}
+    \begin{subfigure}{.32\textwidth}
+        \includegraphics[width=.95\textwidth]{./spaghetti_3.png}
+    \end{subfigure}
+\end{figure}
+
+\subsection{Lancement et suppression de déformables}
+
+Le lancement de déformables à l'aide de la touche SPACE a été conservé pour interagir avec le joueur via les collisions. La touche K a été bind sur la suppression de tous les déformables, y compris le joueur.
+
+\section{Skybox}
+
+Un dernier élément de décoration a été intégré : la \textbf{skybox}. C'est en réalité un simple mesh sphérique bindé à la texture souhaitée.
+
+La skybox est créée à l'initialisation de la scène, et bougée avec la caméra de sorte que la sphère soit centrée sur la caméra avec un rayon suffisant pour donner l'impression d'espace. Pour une raison inconnue, la tessellation de la skybox est déterminante sur la fréquence d'image. Afin de garder une certaine fluidité, la tessellation est gardée en \mintinline{text}{(16, 16)}. La texture n'étant pas répétée, des artéfacts apparaissent sur les pôles.
+
+\section{Placement de la caméra}
+
+Il existe deux types de caméra dans le projet :
+
+\begin{itemize}
+
+    \item La caméra flottante, telle qu'elle est créée pour le TP,
+    \item La caméra fixée sur le joueur, visible avec le binaire \mintinline{text}{camera_movement} (ou avec la compilation classique). Cette caméra est paramétrée par la distance au joueur ainsi que la normale de la planète. Lorsque le joueur quitte l'orbite de la planète, la caméra reste fixée à la planète. Dans ce mode, les bindings de \mintinline{text}{GLFW} concernant les mouvements de caméra ne fonctionnent pas. La position de la caméra est obtenue par
+
+        $$\text{cam}_{\text{pos}} = \text{average}(\text{obj}_{\text{pos}}) + \text{normalize}(\text{average}(\text{obj}_{\text{pos}}) - \text{planet}_\text{center}) * \text{cam}_{\text{dist}}$$
+
+\end{itemize}
+
+\section{Conclusion}
+
+Bien que la partie artistique ne soit pas la même que dans le vrai jeu, la nouvelle mécanique d'attraction gravitationnelle qui distingue ce jeu des autres jeux de platformer 2D/3D a bien été implémentée, et le rendu nous semble satisfaisant.
+
+\end{document}
