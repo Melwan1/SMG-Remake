@@ -48,7 +48,10 @@ int main(int, char *argv[])
 
     // Custom scene initialization
     std::cout << "Initialize data of the scene ..." << std::endl;
-    scene.initialize("scene_02.yaml");
+    std::ostringstream scene_oss;
+    scene_oss << "scene_" << std::setw(2) << std::setfill('0') << argv[1] << ".yaml";
+    const std::string scene_filename = scene_oss.str();
+    scene.initialize(scene_filename);
     std::cout << "Initialization finished\n" << std::endl;
 
     // ************************ //
