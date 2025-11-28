@@ -34,32 +34,32 @@ struct simulation_parameter
 //   matrix
 cgp::mat3 polar_decomposition(cgp::mat3 const &M);
 
-void planetary_attraction(std::vector<shape_deformable_structure*> &deformables,
+void planetary_attraction(std::vector<std::shared_ptr<shape_deformable_structure>> &deformables,
                           const std::vector<Planet> &planets,
                           const std::vector<BlackHole> &black_holes,
                           simulation_parameter const &param);
 
 // Compute the collision between the particles and the walls
-void collision_with_walls(std::vector<shape_deformable_structure*> &deformables);
+void collision_with_walls(std::vector<std::shared_ptr<shape_deformable_structure>> &deformables);
 
 // Compute the collision between the particles and the planets
 void collision_with_planets(
-    std::vector<shape_deformable_structure*> &deformables,
+    std::vector<std::shared_ptr<shape_deformable_structure>> &deformables,
     const std::vector<Planet> &planets, simulation_parameter const &param);
 
 // Compute the collision between the particles and the black_holes
 void collision_with_black_holes(
-    std::vector<shape_deformable_structure*> &deformables,
+    std::vector<std::shared_ptr<shape_deformable_structure>> &deformables,
     const std::vector<BlackHole> &black_holes,
     simulation_parameter const &param);
 
 // Compute the collision between the particles to each other
 void collision_between_particles(
-    std::vector<shape_deformable_structure*> &deformables,
+    std::vector<std::shared_ptr<shape_deformable_structure>> &deformables,
     simulation_parameter const &param);
 
 // Compute the shape matching on all the deformable shapes
-void shape_matching(std::vector<shape_deformable_structure*> &deformables,
+void shape_matching(std::vector<std::shared_ptr<shape_deformable_structure>> &deformables,
                     simulation_parameter const &param);
 
 // Compute player movement

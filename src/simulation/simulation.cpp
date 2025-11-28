@@ -14,8 +14,9 @@ void scene_structure::simulation_step()
     int N_deformable = deformables.size();
 
     // Calculate the center of mass first for later use
-    for (shape_deformable_structure *deformable : deformables)
+    for (int deformable_index = 0; deformable_index < deformables.size(); deformable_index++)
     {
+        shape_deformable_structure* deformable = deformables[deformable_index].get();
         deformable->com = average(deformable->position);
     }
 
@@ -66,7 +67,7 @@ void scene_structure::simulation_step()
     // III. Final velocity update
     for (int kd = 0; kd < N_deformable; ++kd)
     {
-        shape_deformable_structure *deformable = deformables[kd];
+        shape_deformable_structure *deformable = deformables[kd].get();
 
         const cgp::mat4 scaling_transform = mat4::build_identity().
                                             apply_translation(-deformable->com).
@@ -117,7 +118,7 @@ void scene_structure::simulation_step()
 }
 
 // Compute the shape matching on all the deformable shapes
-void shape_matching(std::vector<shape_deformable_structure*> &deformables,
+void shape_matching(std::vector<std::shared_ptr<shape_deformable_structure>> &deformables,
                     simulation_parameter const &param)
 {
     // Arguments:
@@ -157,8 +158,9 @@ void shape_matching(std::vector<shape_deformable_structure*> &deformables,
     //  product. It can be computed using the syntax "mat3 M =
     //  tensor_product(a,b)"
     //
-    for (shape_deformable_structure *deformable : deformables)
+    for (int deformable_index = 0; deformable_index < deformables.size(); deformable_index++)
     {
+        shape_deformable_structure* deformable = deformables[deformable_index].get();
         if (deformable->got_black_holed != nullptr)
         {
             continue;
@@ -187,7 +189,7 @@ void shape_matching(std::vector<shape_deformable_structure*> &deformables,
 }
 
 void collision_between_particles(
-    std::vector<shape_deformable_structure*> &deformables,
+    std::vector<std::shared_ptr<shape_deformable_structure>> &deformables,
     simulation_parameter const &param)
 {
     float r = param.collision_radius; // radius of colliding sphere
@@ -247,7 +249,7 @@ void collision_between_particles(
 }
 
 void collision_with_planets(
-    std::vector<shape_deformable_structure*> &deformables,
+    std::vector<std::shared_ptr<shape_deformable_structure>> &deformables,
     const std::vector<Planet> &planets, simulation_parameter const &param)
 {
     const float r = param.collision_radius; // radius of colliding sphere
@@ -281,7 +283,7 @@ void collision_with_planets(
     {
         for (int j = 0; j < N_planet; j++)
         {
-            auto &deformable = deformables[i];
+            shape_deformable_structure *deformable = deformables[i].get();
             auto &planet = planets[j];
             const auto planet_r = planet.get_radius();
             const auto planet_center = planet.get_center();
@@ -306,7 +308,7 @@ void collision_with_planets(
 
 
 void collision_with_black_holes(
-    std::vector<shape_deformable_structure*> &deformables,
+    std::vector<std::shared_ptr<shape_deformable_structure>> &deformables,
     const std::vector<BlackHole> &black_holes,
     simulation_parameter const &param)
 {
@@ -344,7 +346,7 @@ void collision_with_black_holes(
 
         for (int j = 0; j < N_black_hole; j++)
         {
-            auto &deformable = deformables[i];
+            shape_deformable_structure *deformable = deformables[i].get();
             auto &black_hole = black_holes[j];
             const auto black_hole_r = black_hole.get_radius();
             const auto black_hole_center = black_hole.get_center();
@@ -369,12 +371,12 @@ void collision_with_black_holes(
 
 // Compute the collision between the particles and the walls
 // Note: This function is already pre-coded
-void collision_with_walls(std::vector<shape_deformable_structure*> &deformables)
+void collision_with_walls(std::vector<std::shared_ptr<shape_deformable_structure>> &deformables)
 {
     int N_deformable = deformables.size();
     for (int kd = 0; kd < N_deformable; ++kd)
     {
-        shape_deformable_structure *deformable = deformables[kd];
+        shape_deformable_structure *deformable = deformables[kd].get();
         int N_vertex = deformable->size();
         for (int k = 0; k < N_vertex; ++k)
         {
@@ -404,7 +406,7 @@ void collision_with_walls(std::vector<shape_deformable_structure*> &deformables)
 }
 
 // Compute the attraction of the planet
-void planetary_attraction(std::vector<shape_deformable_structure*> &deformables,
+void planetary_attraction(std::vector<std::shared_ptr<shape_deformable_structure>> &deformables,
                           const std::vector<Planet> &planets,
                           const std::vector<BlackHole> &black_holes,
                           simulation_parameter const &param)
@@ -422,7 +424,7 @@ void planetary_attraction(std::vector<shape_deformable_structure*> &deformables,
             continue;
         }
         // For all the deformable shapes
-        shape_deformable_structure *deformable = deformables[kd];
+        shape_deformable_structure *deformable = deformables[kd].get();
         std::cout << "previous deformable position: " << average(deformable->position) << "\n";
         const int N_vertex = deformable->position.size();
 
@@ -513,13 +515,18 @@ void player_movement(shape_deformable_structure &player,
                 else
                     movement = SIDE_DIRECTION;
             }
+            if (inputs.keyboard.is_pressed("j"))
+            {
+                movement = normal;
+            }
             if (movement.x == 0 && movement.y == 0 && movement.z == 0)
             {
                 break;
             }
 
             float movement_amplitude = cgp::norm(movement);
-            cgp::vec3 direction = cgp::cross(normal, normalize(movement));
+            cgp::vec3 direction = inputs.keyboard.is_pressed("j") ? movement : cgp::cross(normal, normalize(movement));
+            std::cout << "moving in direction: " << direction << "\n";
 
             cgp::vec3 displacement = direction * movement_amplitude;
             for (int k = 0; k < player.position.size(); k++)

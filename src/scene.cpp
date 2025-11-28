@@ -381,7 +381,7 @@ void scene_structure::add_new_deformable_shape(vec3 const &center,
     }
 
     // Add the new deformable structure
-    deformables.emplace_back(&deformable);
+    deformables.emplace_back(std::make_unique<shape_deformable_structure>(deformable));
 }
 
 void scene_structure::mouse_move_event()

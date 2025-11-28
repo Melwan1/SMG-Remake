@@ -40,7 +40,7 @@ struct scene_structure : scene_inputs_generic
     // ****************************** //
     // Elements and shapes of the scene
     // ****************************** //
-    std::unique_ptr<Camera> camera_ptr = nullptr;
+    std::shared_ptr<Camera> camera_ptr = nullptr;
     camera_controller_orbit_euler camera_control;
     camera_projection_perspective camera_projection;
     window_structure window;
@@ -57,11 +57,11 @@ struct scene_structure : scene_inputs_generic
     cgp::timer_basic timer;
 
     simulation_parameter param;
-    std::vector<shape_deformable_structure*> deformables;
+    std::vector<std::shared_ptr<shape_deformable_structure>> deformables;
     shape_deformable_structure player = shape_deformable_structure();
     std::vector<Planet> planets = std::vector<Planet>();
     std::vector<BlackHole> black_holes = std::vector<BlackHole>();
-    std::unique_ptr<opengl_texture_image_structure> black_hole_opengl_image;
+    std::shared_ptr<opengl_texture_image_structure> black_hole_opengl_image;
 
     void add_new_deformable_shape(vec3 const &center, vec3 const &velocity,
                                   vec3 const &angular_velocity,
